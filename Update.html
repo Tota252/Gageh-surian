@@ -1,0 +1,2642 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gageh Surian - Transportasi & Kurir Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f7f6;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            80%, 100% { transform: scale(2.2); opacity: 0; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-radar-sweep {
+            animation: radar-sweep 2.4s linear infinite;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .swipe-container {
+            position: relative;
+            width: 100%;
+            height: 56px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .swipe-track {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            border-radius: 9999px;
+            width: 56px;
+            transition: width 0.1s ease;
+        }
+        .swipe-thumb {
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #059669;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: grab;
+            z-index: 10;
+            touch-action: none;
+        }
+        .swipe-thumb:active { cursor: grabbing; }
+        .swipe-text {
+            position: relative;
+            z-index: 5;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #475569;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col">
+        <!-- GPS & SERVER STATUS BAR -->
+        <div id="server-bar" class="bg-emerald-950 text-emerald-100 px-4 py-2 text-xs flex items-center justify-between z-30 shadow-sm">
+            <div class="flex items-center gap-2">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span id="server-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span id="server-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                </span>
+                <span id="server-status-text" class="font-medium truncate max-w-[200px]">Menghubungkan GPS & Server...</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button type="button" id="btn-notif-perm" onclick="requestAndroidExternalNotificationPermission(true)" class="text-amber-300 hover:text-white transition p-1" title="Aktifkan Notifikasi Eksternal & Layar Kunci Android">
+                    <i id="icon-notif-perm" class="fas fa-bell-slash"></i>
+                </button>
+                <button type="button" onclick="refreshLocation(true)" class="text-emerald-300 hover:text-white transition p-1" title="Perbarui Lokasi">
+                    <i class="fas fa-location-crosshairs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- BANNER IZIN NOTIFIKASI EKSTERNAL ANDROID (BILAH ATAS & LAYAR KUNCI) -->
+        <div id="notif-permission-banner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between gap-2 z-20">
+            <div class="flex items-center gap-2 text-amber-900 text-xs">
+                <i class="fas fa-bell text-amber-600 animate-bounce"></i>
+                <span class="font-semibold leading-tight">Izinkan notifikasi sistem Android agar tampil di bilah atas & layar kunci.</span>
+            </div>
+            <button type="button" onclick="requestAndroidExternalNotificationPermission(true)" class="shrink-0 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-[11px] px-3 py-1.5 rounded-lg shadow-sm transition">
+                Izinkan
+            </button>
+        </div>
+
+        <!-- 1. LANDING PAGE -->
+        <div id="view-landing" class="flex-1 flex flex-col justify-between p-6 bg-gradient-to-b from-emerald-600 via-emerald-700 to-teal-900 text-white relative">
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-emerald-500 rounded-full opacity-20 blur-2xl"></div>
+            <div class="absolute top-40 -left-20 w-56 h-56 bg-teal-400 rounded-full opacity-20 blur-2xl"></div>
+
+            <div class="mt-10 text-center relative z-10">
+                <div class="w-24 h-24 bg-white rounded-3xl mx-auto shadow-xl flex items-center justify-center mb-6 animate-float">
+                    <div class="relative">
+                        <i class="fas fa-route text-4xl text-emerald-600"></i>
+                        <i class="fas fa-motorcycle text-xl text-amber-500 absolute -bottom-1 -right-2 bg-white rounded-full p-1"></i>
+                    </div>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight mb-2">Gageh Surian</h1>
+                <p class="text-emerald-100 text-sm font-medium px-4">Transportasi & Pengiriman Cepat Berbasis Lokasi Terkini & Server Terpadu</p>
+            </div>
+
+            <div class="space-y-4 mb-8 relative z-10">
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl">
+                    <p class="text-center text-xs uppercase tracking-wider text-emerald-200 font-bold mb-4">Pilih Akses Masuk</p>
+
+                    <button type="button" onclick="openModal('modal-passenger-auth')" class="w-full bg-white text-emerald-900 hover:bg-emerald-50 active:scale-[0.98] transition-all p-4 rounded-2xl shadow-lg flex items-center justify-between mb-3 group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-bold text-base">Masuk Penumpang</div>
+                                <div class="text-xs text-slate-500">Pesan Bike, Cars & Delivery</div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-emerald-600"></i>
+                    </button>
+
+                    <button type="button" onclick="openModal('modal-driver-auth')" class="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 active:scale-[0.98] transition-all p-4 rounded-2xl shadow-lg flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-600/20 text-slate-950 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                                <i class="fas fa-id-card-clip"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-bold text-base">Masuk Mitra Driver</div>
+                                <div class="text-xs text-slate-800 font-medium">Daftar atau Login Akun Driver</div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-950"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PASSENGER DASHBOARD -->
+        <div id="view-passenger" class="hidden flex-1 flex flex-col bg-slate-50 relative pb-24">
+            <div class="bg-emerald-600 text-white pt-6 pb-12 px-6 rounded-b-[2.5rem] shadow-md relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <p class="text-emerald-100 text-xs">Selamat Datang,</p>
+                        <h2 id="pax-display-name" class="text-xl font-bold truncate max-w-[200px]">Penumpang</h2>
+                    </div>
+                    <button type="button" onclick="openPassengerHistory()" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+                        <i class="fas fa-receipt"></i>
+                    </button>
+                </div>
+                <div class="bg-emerald-700/60 backdrop-blur-sm rounded-2xl p-3 flex items-center gap-3 border border-emerald-500/30">
+                    <div class="w-8 h-8 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center shrink-0">
+                        <i class="fas fa-map-pin text-sm"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <p class="text-[10px] uppercase tracking-wider text-emerald-200 font-bold">Lokasi Terkini & Server Akun</p>
+                        <p id="pax-kecamatan-badge" class="text-xs font-semibold truncate">Mendeteksi lokasi...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 -mt-6 relative z-10">
+                <div class="bg-white rounded-3xl p-5 shadow-lg border border-slate-100">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Mau kemana hari ini?</h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" onclick="openOrderForm('Bike')" class="flex flex-col items-center p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 active:scale-95 transition">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-md mb-2">
+                                <i class="fas fa-motorcycle"></i>
+                            </div>
+                            <span class="font-bold text-sm text-slate-800">Bike</span>
+                            <span class="text-[10px] text-slate-500">Motor</span>
+                        </button>
+                        <button type="button" onclick="openOrderForm('Cars')" class="flex flex-col items-center p-3 rounded-2xl bg-blue-50 hover:bg-blue-100 border border-blue-100 active:scale-95 transition">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-md mb-2">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <span class="font-bold text-sm text-slate-800">Cars</span>
+                            <span class="text-[10px] text-slate-500">Mobil</span>
+                        </button>
+                        <button type="button" onclick="openOrderForm('Delivery')" class="flex flex-col items-center p-3 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-100 active:scale-95 transition">
+                            <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-md mb-2">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <span class="font-bold text-sm text-slate-800">Delivery</span>
+                            <span class="text-[10px] text-slate-500">Kurir Barang</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pax-searching-box" class="hidden px-6 mt-6">
+                <div class="bg-white rounded-3xl p-6 shadow-md border border-emerald-100 text-center relative overflow-hidden">
+                    <div class="relative w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                        <div class="absolute inset-0 bg-emerald-400 rounded-full animate-pulse-ring"></div>
+                        <div class="w-14 h-14 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xl relative z-10 shadow-lg">
+                            <i class="fas fa-satellite-dish"></i>
+                        </div>
+                    </div>
+                    <h4 class="font-bold text-base text-slate-800">Mencari Driver Terdekat...</h4>
+                    <p id="pax-search-detail" class="text-xs text-slate-500 mt-1">Menghubungkan ke driver di server akun Anda</p>
+                    <button type="button" onclick="cancelPassengerSearch()" class="mt-4 px-5 py-2 rounded-full bg-rose-100 text-rose-600 font-bold text-xs hover:bg-rose-200 transition">
+                        Batalkan Pencarian
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-6 mt-6">
+                <div class="bg-gradient-to-r from-teal-800 to-emerald-900 rounded-3xl p-5 text-white shadow-md flex items-center justify-between">
+                    <div>
+                        <span class="bg-amber-400 text-slate-950 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">Bebas Nego</span>
+                        <h4 class="font-bold text-sm mt-2">Tentukan Tarif Sendiri!</h4>
+                        <p class="text-xs text-emerald-200 mt-0.5">Masukkan ongkos sesuai keinginan Anda.</p>
+                    </div>
+                    <i class="fas fa-hand-holding-dollar text-4xl text-emerald-400/50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. DRIVER DASHBOARD -->
+        <div id="view-driver" class="hidden flex-1 flex flex-col bg-slate-50 relative pb-24">
+            <div class="bg-slate-900 text-white pt-6 pb-12 px-6 rounded-b-[2.5rem] shadow-lg">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-extrabold text-lg shadow">
+                            <i id="drv-vehicle-icon" class="fas fa-motorcycle"></i>
+                        </div>
+                        <div>
+                            <h2 id="drv-display-name" class="font-bold text-base leading-tight">Nama Driver</h2>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span id="drv-display-plat" class="text-[11px] bg-slate-800 px-2 py-0.5 rounded text-amber-400 font-mono font-bold">BA 0000 XX</span>
+                                <span id="drv-display-id" class="text-[11px] text-slate-400 font-mono">ID: ------</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="openDriverAccountMenu()" class="w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-400 flex items-center justify-center transition shadow">
+                        <i class="fas fa-user-gear"></i>
+                    </button>
+                </div>
+
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 shadow-lg flex items-center justify-between border border-emerald-400/20">
+                    <div>
+                        <p class="text-xs text-emerald-100 font-medium">Saldo Mitra Driver</p>
+                        <h3 id="drv-balance" class="text-2xl font-extrabold tracking-tight mt-0.5">Rp 0</h3>
+                        <p class="text-[10px] text-emerald-200 mt-1"><i class="fas fa-info-circle mr-1"></i>Min. Rp 1.500 untuk terima order</p>
+                    </div>
+                    <button type="button" onclick="openTopupModal()" class="bg-white text-emerald-800 hover:bg-emerald-50 active:scale-95 transition px-4 py-2.5 rounded-xl font-bold text-xs shadow flex flex-col items-center gap-1">
+                        <i class="fas fa-wallet text-lg text-emerald-600"></i>
+                        <span>Top Up</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-6 -mt-6 relative z-10">
+                <div class="bg-white rounded-3xl p-5 shadow-md border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="drv-status-dot" class="w-3 h-3 rounded-full bg-slate-400"></span>
+                            <h4 id="drv-status-title" class="font-bold text-base text-slate-800">Status Offline</h4>
+                        </div>
+                        <p id="drv-status-desc" class="text-xs text-slate-500 mt-0.5">Aktifkan untuk mulai menerima orderan</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="drv-online-toggle" class="sr-only peer" onchange="toggleDriverOnline(this)">
+                        <div class="w-14 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-600 shadow-inner"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="px-6 mt-6 flex-1 flex flex-col justify-center items-center text-center">
+                <div id="drv-radar-offline" class="py-8">
+                    <div class="w-20 h-20 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center text-3xl mx-auto mb-3">
+                        <i class="fas fa-power-off"></i>
+                    </div>
+                    <p class="font-bold text-slate-600 text-sm">Anda Sedang Istirahat</p>
+                    <p class="text-xs text-slate-400 mt-1 max-w-[220px]">Geser tombol di atas untuk masuk ke antrean server akun Anda.</p>
+                </div>
+
+                <div id="drv-radar-online" class="hidden py-6 w-full">
+                    <div class="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
+                        <div class="absolute inset-0 bg-emerald-400/40 rounded-full animate-pulse-ring"></div>
+                        <div class="absolute inset-4 bg-emerald-500/30 rounded-full animate-pulse-ring" style="animation-delay: 0.9s;"></div>
+                        <div class="absolute inset-1 rounded-full border-2 border-dashed border-emerald-400/70 animate-radar-sweep"></div>
+                        <div class="absolute inset-2 rounded-full overflow-hidden animate-radar-sweep">
+                            <div class="w-1/2 h-1/2 bg-gradient-to-tr from-emerald-500/40 to-transparent origin-bottom-right rounded-tl-full"></div>
+                        </div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-full flex items-center justify-center text-2xl relative z-10 shadow-xl ring-4 ring-emerald-100">
+                            <i class="fas fa-satellite-dish animate-pulse"></i>
+                        </div>
+                    </div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold mb-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+                        <span>RADAR AKTIF MENCARI ORDER</span>
+                    </div>
+                    <p class="font-bold text-emerald-700 text-sm">Menunggu Orderan Masuk...</p>
+                    <p id="drv-server-info" class="text-xs text-slate-500 mt-1">Standby di Server 27373</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVE TRANSACTION DRAWER -->
+        <div id="active-order-drawer" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40">
+            <div onclick="openActiveOrderDetail()" class="bg-emerald-700 text-white mx-3 mb-3 p-4 rounded-2xl shadow-2xl border border-emerald-500 flex items-center justify-between cursor-pointer active:scale-[0.99] transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg animate-bounce">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] uppercase font-extrabold bg-emerald-900 px-2 py-0.5 rounded text-amber-300">Transaksi Aktif</span>
+                            <span id="drawer-service-type" class="text-xs font-bold">Bike</span>
+                        </div>
+                        <p id="drawer-status-text" class="text-xs text-emerald-100 font-medium mt-0.5 truncate max-w-[200px]">Klik untuk buka detail & chat</p>
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                    <i class="fas fa-chevron-up"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- FLOATING CUSTOMER SERVICE BUTTON -->
+        <button type="button" id="btn-cs-float" onclick="openModal('modal-cs')" class="fixed bottom-20 right-4 md:right-[calc(50%-210px)] z-30 w-12 h-12 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full shadow-xl flex items-center justify-center text-xl active:scale-90 transition border-2 border-white" title="Hubungi Customer Service">
+            <i class="fas fa-headset"></i>
+        </button>
+    </div>
+
+    <!-- MODALS -->
+    <div id="modal-passenger-auth" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-extrabold text-slate-800">Masuk Penumpang</h3>
+                <button type="button" onclick="closeModal('modal-passenger-auth')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Nama Lengkap Anda</label>
+                    <input type="text" id="input-pax-name" placeholder="Contoh: Budi Santoso" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-semibold">
+                </div>
+                <button type="button" onclick="loginPassenger()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                    Masuk ke Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-driver-auth" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-extrabold text-slate-800">Portal Mitra Driver</h3>
+                <button type="button" onclick="closeModal('modal-driver-auth')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-5">
+                <button type="button" id="tab-drv-login" onclick="switchDriverTab('login')" class="py-2 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition">Login Mitra</button>
+                <button type="button" id="tab-drv-register" onclick="switchDriverTab('register')" class="py-2 rounded-lg text-xs font-bold text-slate-500 transition">Daftar Baru</button>
+            </div>
+
+            <div id="form-drv-login" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">ID Driver (6 Digit) atau No. WhatsApp</label>
+                    <input type="text" id="login-drv-identifier" placeholder="Contoh: A8K9P2 atau 08123456789" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-semibold uppercase">
+                </div>
+                <button type="button" onclick="loginDriver()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                    Masuk Dashboard Driver
+                </button>
+            </div>
+
+            <div id="form-drv-register" class="hidden space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Lengkap</label>
+                    <input type="text" id="reg-drv-name" placeholder="Nama sesuai KTP" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nomor WhatsApp Aktif</label>
+                    <input type="tel" id="reg-drv-wa" placeholder="0812xxxxxxxx" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-semibold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nomor Polisi Kendaraan</label>
+                    <input type="text" id="reg-drv-plat" oninput="this.value = this.value.toUpperCase()" placeholder="BA 1234 XY" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-mono font-bold uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Mode Kendaraan</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="reg-drv-vehicle" value="Bike" checked class="peer sr-only">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-center transition">
+                                <i class="fas fa-motorcycle text-xl text-emerald-600 mb-1"></i>
+                                <div class="text-xs font-bold">Bike (Motor)</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="reg-drv-vehicle" value="Cars" class="peer sr-only">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 text-center transition">
+                                <i class="fas fa-car text-xl text-blue-600 mb-1"></i>
+                                <div class="text-xs font-bold">Cars (Mobil)</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button type="button" onclick="registerDriver()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl shadow-lg transition mt-2">
+                    Daftar & Masuk Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-order-form" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <span id="order-modal-icon" class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fas fa-motorcycle"></i></span>
+                    <h3 id="order-modal-title" class="text-lg font-extrabold text-slate-800">Pesan Bike</h3>
+                </div>
+                <button type="button" onclick="closeModal('modal-order-form')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="space-y-3.5">
+                <div id="delivery-vehicle-selector" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Armada Kurir</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="delivery-armada" value="Bike" checked class="peer sr-only">
+                            <div class="py-2 px-3 rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-center text-xs font-bold">
+                                <i class="fas fa-motorcycle mr-1"></i> Kurir Motor
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="delivery-armada" value="Cars" class="peer sr-only">
+                            <div class="py-2 px-3 rounded-xl border border-slate-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 text-center text-xs font-bold">
+                                <i class="fas fa-car mr-1"></i> Kurir Mobil
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Titik Jemput</label>
+                    <div class="relative">
+                        <i class="fas fa-circle-dot text-emerald-600 absolute left-3.5 top-3.5 text-sm"></i>
+                        <input type="text" id="order-pickup" placeholder="Masukkan lokasi penjemputan" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Titik Tujuan</label>
+                    <div class="relative">
+                        <i class="fas fa-location-dot text-rose-500 absolute left-3.5 top-3.5 text-sm"></i>
+                        <input type="text" id="order-destination" placeholder="Masukkan lokasi tujuan" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-sm font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Tawaran Ongkos (Rp)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-2.5 font-bold text-slate-400 text-sm">Rp</span>
+                        <input type="text" inputmode="numeric" id="order-fare" onkeyup="formatRibuanInput(this)" placeholder="10.000" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-base font-extrabold text-emerald-700">
+                    </div>
+                </div>
+
+                <button type="button" id="btn-submit-pax-order" onclick="submitPassengerOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition mt-2 flex items-center justify-center gap-2">
+                    <i class="fas fa-search-location"></i> Cari Driver Terdekat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-incoming-order" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl border-2 border-amber-400">
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-800 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse">Orderan Baru Masuk!</span>
+                    <span id="inc-countdown-badge" class="bg-rose-600 text-white text-xs font-mono font-extrabold px-2.5 py-1 rounded-full">15s</span>
+                </div>
+                <h3 id="inc-service-badge" class="text-xl font-extrabold text-slate-900 mt-2">BIKE • Rp 15.000</h3>
+                <p id="inc-distance-badge" class="text-xs text-emerald-600 font-bold mt-0.5">Jarak dari posisi Anda: ~0.5 km</p>
+            </div>
+
+            <div class="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-100 mb-5">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span class="text-xs text-slate-500">Penumpang</span>
+                    <span id="inc-pax-name" class="text-sm font-bold text-slate-800">-</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase text-emerald-600">Titik Jemput</p>
+                    <p id="inc-pickup" class="text-xs font-semibold text-slate-800">-</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase text-rose-500">Titik Tujuan</p>
+                    <p id="inc-destination" class="text-xs font-semibold text-slate-800">-</p>
+                </div>
+                <div class="pt-1 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono" id="inc-coords">0.0000, 0.0000</span>
+                    <button type="button" onclick="openGoogleMapsNav('incoming')" class="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg hover:bg-blue-200">
+                        <i class="fas fa-diamond-turn-right mr-1"></i> Cek Peta
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="rejectIncomingOrder()" class="py-3.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-sm transition">
+                    Tolak
+                </button>
+                <button type="button" onclick="acceptIncomingOrder()" class="py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg transition">
+                    Terima Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-active-detail" class="hidden fixed inset-0 bg-white z-50 flex flex-col max-w-md mx-auto">
+        <div class="bg-slate-900 text-white p-4 flex items-center justify-between shadow">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="closeModal('modal-active-detail')" class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div>
+                    <h3 id="act-partner-name" class="font-bold text-sm">Nama Partner</h3>
+                    <p id="act-partner-sub" class="text-[11px] text-amber-400 font-mono">ID / Plat Nomor</p>
+                </div>
+            </div>
+            <button type="button" onclick="initiateVoiceCall()" class="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-lg animate-pulse" title="Telepon Suara Real-Time">
+                <i class="fas fa-phone-volume"></i>
+            </button>
+        </div>
+
+        <div class="bg-emerald-50 p-4 border-b border-emerald-100">
+            <div class="flex items-center justify-between mb-2">
+                <span id="act-status-badge" class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-600 text-white">Driver Menuju Lokasi</span>
+                <span id="act-fare-display" class="font-extrabold text-base text-emerald-900">Rp 0</span>
+            </div>
+            <div class="text-xs space-y-1 text-slate-700">
+                <p><i class="fas fa-circle-dot text-emerald-600 w-4"></i> <span id="act-pickup" class="font-semibold">-</span></p>
+                <p><i class="fas fa-location-dot text-rose-500 w-4"></i> <span id="act-destination" class="font-semibold">-</span></p>
+            </div>
+            <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-emerald-200/60">
+                <span id="act-trx-id" class="text-[10px] font-mono text-slate-500">TRX: -</span>
+                <button type="button" onclick="openGoogleMapsNav('active')" class="text-xs bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg shadow flex items-center gap-1.5">
+                    <i class="fas fa-location-arrow"></i> Navigasi Google Maps
+                </button>
+            </div>
+        </div>
+
+        <div id="driver-swipe-controls" class="hidden p-3 bg-white border-b border-slate-200 space-y-2.5">
+            <div id="swipe-container" class="swipe-container">
+                <div id="swipe-track" class="swipe-track"></div>
+                <div id="swipe-thumb" class="swipe-thumb"><i class="fas fa-angles-right"></i></div>
+                <span id="swipe-label" class="swipe-text">Geser: Sudah Sampai Jemput</span>
+            </div>
+            <button type="button" id="btn-driver-cancel-order" onclick="confirmDriverCancelOrder()" class="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-[0.99] text-rose-600 border border-rose-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-ban"></i> Batalkan Orderan Ini
+            </button>
+        </div>
+
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-100">
+            <div class="text-center">
+                <span class="text-[10px] bg-slate-200 text-slate-600 px-3 py-1 rounded-full">Demi keamanan, pengiriman nomor HP/WA otomatis disembunyikan.</span>
+            </div>
+        </div>
+
+        <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+            <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageUpload(this)">
+            <button type="button" id="btn-chat-gallery" onclick="document.getElementById('chat-image-input').click()" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-emerald-50 text-emerald-600 border border-slate-200 flex items-center justify-center shrink-0 transition" title="Kirim Foto dari Galeri">
+                <i class="fas fa-image text-base"></i>
+            </button>
+            <input type="text" id="chat-input" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Ketik pesan..." class="flex-1 bg-slate-100 px-4 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" onclick="sendChatMessage()" class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow hover:bg-emerald-700 shrink-0">
+                <i class="fas fa-paper-plane text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="modal-voice-call" class="hidden fixed inset-0 bg-slate-950/95 z-[60] flex flex-col items-center justify-between py-14 px-6 text-white">
+        <div class="text-center">
+            <span id="call-status-label" class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Panggilan Suara Masuk</span>
+            <h2 id="call-partner-name" class="text-2xl font-extrabold mt-3">Partner</h2>
+            <p id="call-timer" class="text-sm text-slate-300 mt-1 font-mono">Berdering...</p>
+            <p id="call-audio-hint" class="text-[11px] text-emerald-300/80 mt-2">Audio suara real-time dua arah</p>
+        </div>
+
+        <div class="relative w-32 h-32 flex items-center justify-center">
+            <div class="absolute inset-0 bg-emerald-500 rounded-full animate-pulse-ring"></div>
+            <div class="w-24 h-24 rounded-full bg-emerald-600 flex items-center justify-center text-4xl shadow-2xl relative z-10">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+
+        <audio id="remote-voice-audio" autoplay playsinline></audio>
+
+        <div class="flex flex-col items-center gap-6 w-full">
+            <div id="in-call-controls" class="hidden flex items-center gap-6">
+                <button type="button" id="btn-toggle-mute" onclick="toggleCallMute()" class="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex flex-col items-center justify-center text-lg border border-slate-700 transition">
+                    <i id="icon-call-mute" class="fas fa-microphone"></i>
+                    <span class="text-[9px] mt-0.5 font-semibold">Mic</span>
+                </button>
+                <button type="button" id="btn-toggle-speaker" onclick="toggleCallSpeaker()" class="w-14 h-14 rounded-full bg-emerald-700/70 hover:bg-emerald-700 text-white flex flex-col items-center justify-center text-lg border border-emerald-500/40 transition">
+                    <i id="icon-call-speaker" class="fas fa-volume-high"></i>
+                    <span class="text-[9px] mt-0.5 font-semibold">Suara</span>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-8">
+                <button type="button" id="btn-answer-call" onclick="answerVoiceCall()" class="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center text-2xl shadow-xl animate-bounce">
+                    <i class="fas fa-phone"></i>
+                </button>
+                <button type="button" onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center text-2xl shadow-xl">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-topup" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-extrabold text-slate-800">Top Up Saldo Driver</h3>
+                <button type="button" onclick="closeModal('modal-topup')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+                <p class="text-xs text-blue-800 font-bold mb-1">Silakan Transfer Sesuai Nominal ke:</p>
+                <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-blue-100 mt-2">
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400">BANK MANDIRI</p>
+                        <p id="mandiri-rek" class="text-base font-mono font-extrabold text-slate-900">1110023034784</p>
+                        <p class="text-xs font-bold text-blue-700">a.n. TOTA RAHMAN</p>
+                    </div>
+                    <button type="button" onclick="copyRekening()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">
+                        Salin
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">ID Akun Driver (Otomatis)</label>
+                    <input type="text" id="topup-driver-id" readonly class="w-full px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-mono font-bold text-sm cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Jumlah Nominal Top Up (Rp)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-2.5 font-bold text-slate-400 text-sm">Rp</span>
+                        <input type="text" inputmode="numeric" id="topup-amount" onkeyup="formatRibuanInput(this)" placeholder="50.000" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:outline-none text-base font-extrabold text-emerald-700">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Upload Bukti Transfer (Dari Galeri)</label>
+                    <input type="file" id="topup-proof-input" accept="image/*" class="hidden" onchange="handleTopupProofSelect(this)">
+                    <div id="topup-upload-placeholder" onclick="document.getElementById('topup-proof-input').click()" class="border-2 border-dashed border-emerald-300 bg-emerald-50/60 hover:bg-emerald-50 rounded-2xl p-4 text-center cursor-pointer transition">
+                        <div class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg mx-auto mb-2">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <p class="text-xs font-bold text-emerald-800">Pilih Gambar Bukti Transfer dari Galeri</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Format JPG, PNG, WEBP</p>
+                    </div>
+
+                    <div id="topup-preview-box" class="hidden relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                        <img id="topup-preview-img" src="" alt="Preview Bukti Transfer" class="w-full max-h-44 object-contain bg-slate-900">
+                        <div class="p-2.5 bg-white flex items-center justify-between border-t border-slate-200">
+                            <span id="topup-file-name" class="text-[11px] font-semibold text-slate-600 truncate max-w-[180px]">bukti.jpg</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="document.getElementById('topup-proof-input').click()" class="text-[11px] font-bold text-blue-600 hover:underline">Ganti</button>
+                                <button type="button" onclick="clearTopupProof()" class="text-[11px] font-bold text-rose-600 hover:underline">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-submit-topup" onclick="submitTopupRequest()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition mt-2">
+                    Kirim Permintaan ke Admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-account-history" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="history-modal-title" class="text-lg font-extrabold text-slate-800">Riwayat & Akun</h3>
+                <button type="button" onclick="closeModal('modal-account-history')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="account-profile-box" class="bg-slate-900 text-white p-4 rounded-2xl mb-4 flex items-center justify-between">
+                <div>
+                    <p id="prof-name" class="font-bold text-sm">-</p>
+                    <p id="prof-sub" class="text-xs text-slate-400 font-mono mt-0.5">-</p>
+                </div>
+                <button type="button" onclick="confirmLogout()" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5">
+                    <i class="fas fa-right-from-bracket"></i> Log Out
+                </button>
+            </div>
+
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Riwayat Transaksi (Klik untuk Detail)</h4>
+            <div id="transaction-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <p class="text-xs text-slate-400 text-center py-6">Memuat riwayat transaksi...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-trx-detail" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 animate-slide-up shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-600">Detail Transaksi</span>
+                <button type="button" onclick="closeModal('modal-trx-detail')" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="trx-detail-content" class="space-y-2.5 text-xs"></div>
+        </div>
+    </div>
+
+    <div id="modal-cs" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 animate-slide-up shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><i class="fas fa-headset"></i></div>
+                    <h3 class="text-lg font-extrabold text-slate-800">Customer Service</h3>
+                </div>
+                <button type="button" onclick="closeModal('modal-cs')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nama Anda</label>
+                    <input type="text" id="cs-name" placeholder="Masukkan nama lengkap" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nomor WhatsApp Aktif</label>
+                    <input type="tel" id="cs-wa" placeholder="0812xxxxxxxx" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Pesan Pengaduan / Bantuan</label>
+                    <textarea id="cs-message" rows="3" placeholder="Jelaskan kendala Anda..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none text-sm"></textarea>
+                </div>
+                <button type="button" onclick="submitCSReport()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl shadow-lg transition">
+                    Kirim ke Admin Kontrol
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JENDELA NOTIFIKASI INTERNAL DI APLIKASI (TETAP SEPERTI SEMULA) -->
+    <div id="modal-dialog" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl animate-slide-up">
+            <div id="dialog-icon" class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                <i class="fas fa-check"></i>
+            </div>
+            <h4 id="dialog-title" class="font-extrabold text-base text-slate-900 mb-1">Informasi</h4>
+            <p id="dialog-message" class="text-xs text-slate-600 mb-5 leading-relaxed">Pesan notifikasi</p>
+            <div id="dialog-actions" class="flex gap-2 justify-center">
+                <button type="button" id="dialog-btn-cancel" onclick="closeModal('modal-dialog')" class="hidden flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">Batal</button>
+                <button type="button" id="dialog-btn-ok" onclick="closeModal('modal-dialog')" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs">Mengerti</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-chat-image-zoom" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[65] flex flex-col items-center justify-center p-4" onclick="closeModal('modal-chat-image-zoom')">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-4 animate-slide-up" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Foto Chat</span>
+                <button type="button" onclick="closeModal('modal-chat-image-zoom')" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <img id="chat-zoom-img" src="" alt="Preview Foto Chat" class="w-full max-h-[70vh] object-contain rounded-2xl bg-slate-950">
+        </div>
+    </div>
+
+    <script>
+        window.openModal = function(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+            if (typeof window.persistFullAppState === 'function') window.persistFullAppState();
+        };
+        window.closeModal = function(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+            if (typeof window.persistFullAppState === 'function') window.persistFullAppState();
+        };
+        window.formatRupiah = function(angka) {
+            if (!angka && angka !== 0) return '0';
+            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        };
+        window.parseRupiah = function(str) {
+            if (!str) return 0;
+            return parseInt(str.toString().replace(/\./g, ''), 10) || 0;
+        };
+        window.formatRibuanInput = function(el) {
+            const val = el.value.replace(/[^0-9]/g, '');
+            el.value = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
+        };
+        window.switchDriverTab = function(tab) {
+            const tabLogin = document.getElementById('tab-drv-login');
+            const tabReg = document.getElementById('tab-drv-register');
+            const formLogin = document.getElementById('form-drv-login');
+            const formReg = document.getElementById('form-drv-register');
+            if (tab === 'login') {
+                tabLogin.className = 'py-2 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition';
+                tabReg.className = 'py-2 rounded-lg text-xs font-bold text-slate-500 transition';
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+            } else {
+                tabReg.className = 'py-2 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition';
+                tabLogin.className = 'py-2 rounded-lg text-xs font-bold text-slate-500 transition';
+                formReg.classList.remove('hidden');
+                formLogin.classList.add('hidden');
+            }
+        };
+        window.showDialog = function(title, message, iconType = 'info', onConfirm = null) {
+            const iconEl = document.getElementById('dialog-icon');
+            const cancelBtn = document.getElementById('dialog-btn-cancel');
+            const okBtn = document.getElementById('dialog-btn-ok');
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            if (iconType === 'error') {
+                iconEl.className = 'w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mx-auto mb-3';
+                iconEl.innerHTML = '<i class="fas fa-circle-exclamation"></i>';
+            } else if (iconType === 'confirm') {
+                iconEl.className = 'w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mx-auto mb-3';
+                iconEl.innerHTML = '<i class="fas fa-question"></i>';
+            } else {
+                iconEl.className = 'w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mx-auto mb-3';
+                iconEl.innerHTML = '<i class="fas fa-check"></i>';
+            }
+            if (onConfirm) {
+                cancelBtn.classList.remove('hidden');
+                okBtn.innerText = 'Ya, Lanjutkan';
+                okBtn.onclick = () => {
+                    window.closeModal('modal-dialog');
+                    onConfirm();
+                };
+            } else {
+                cancelBtn.classList.add('hidden');
+                okBtn.innerText = 'Mengerti';
+                okBtn.onclick = () => window.closeModal('modal-dialog');
+            }
+            window.openModal('modal-dialog');
+        };
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUj0vSZPUZJ7-4RVCsWk6m-770kBd6iHc",
+            authDomain: "gageh-surian.firebaseapp.com",
+            projectId: "gageh-surian",
+            storageBucket: "gageh-surian.firebasestorage.app",
+            messagingSenderId: "156906661043",
+            appId: "1:156906661043:web:af2e3d561edca735487cc6"
+        };
+
+        let fbApp = null, auth = null, db = null;
+
+        function getFirestoreInstance() {
+            if (db) return db;
+            if (typeof firebase === 'undefined') {
+                throw new Error('Koneksi ke server database belum siap. Periksa jaringan internet Anda lalu coba lagi.');
+            }
+            try {
+                fbApp = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+                if (!auth && typeof firebase.auth === 'function') auth = firebase.auth();
+                if (!db && typeof firebase.firestore === 'function') db = firebase.firestore();
+            } catch (err) {
+                console.error("Firebase Init Error:", err);
+                throw new Error('Gagal menginisialisasi koneksi server database.');
+            }
+            if (!db) {
+                throw new Error('Layanan database server belum tersedia.');
+            }
+            return db;
+        }
+
+        function getAuthInstance() {
+            if (auth) return auth;
+            try { getFirestoreInstance(); } catch (_) {}
+            return auth;
+        }
+
+        try { getFirestoreInstance(); } catch (_) {}
+
+        const getPublicCol = (colName) => getFirestoreInstance().collection(colName);
+        const getPublicDoc = (colName, docId) => getFirestoreInstance().collection(colName).doc(docId);
+        const DEFAULT_ACCOUNT_SERVER = '27373';
+
+        let currentUserAuth = null;
+        let isLoggingOut = false;
+        let appState = {
+            role: null,
+            userData: null,
+            location: {
+                lat: -1.1167,
+                lng: 100.7833,
+                kecamatan: 'Pantai Cermin',
+                currentLocationLabel: 'Pantai Cermin',
+                server: DEFAULT_ACCOUNT_SERVER
+            },
+            selectedService: 'Bike',
+            activeOrderId: null,
+            activeOrderData: null,
+            incomingOrderData: null,
+            topupProofDataUrl: null,
+            topupProofFileName: '',
+            uiState: { activeDetailOpen: false, scrollY: 0 }
+        };
+
+        let unsubDriverDoc = null, unsubPassengerDoc = null, unsubDriverTopups = null, unsubOrders = null, unsubChats = null, unsubCalls = null, unsubCallerCandidates = null, unsubCalleeCandidates = null, locationWatchId = null;
+        const OFFER_TIMEOUT_SECONDS = 15;
+        let incomingOfferTimer = null, activeOfferTrxId = null, paxOfferWatchdogTimer = null;
+        let ringInterval = null;
+
+        // =========================================================================
+        // NOTIFIKASI EKSTERNAL ANDROID (STATUS BAR BANNER, LAYAR KUNCI & VOLUME NOTIFIKASI)
+        // =========================================================================
+        let swRegistrationRef = null;
+
+        const ANDROID_APP_ICON_DATA = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+                <rect width="192" height="192" rx="44" fill="#059669"/>
+                <circle cx="96" cy="96" r="64" fill="#ffffff" opacity="0.16"/>
+                <text x="96" y="122" font-size="92" text-anchor="middle" fill="#ffffff">🛵</text>
+            </svg>`
+        );
+
+        // Daftarkan Service Worker agar Android OS merender Heads-Up Banner di atas layar & Lock Screen
+        async function registerAndroidSystemNotificationWorker() {
+            if (!('serviceWorker' in navigator)) return null;
+            if (swRegistrationRef) return swRegistrationRef;
+            try {
+                const swCode = `
+                    self.addEventListener('install', (event) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (event) => {
+                        event.waitUntil(self.clients.claim());
+                    });
+                    self.addEventListener('notificationclick', (event) => {
+                        event.notification.close();
+                        event.waitUntil(
+                            self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+                                for (const client of clientList) {
+                                    if ('focus' in client) return client.focus();
+                                }
+                                if (self.clients.openWindow) return self.clients.openWindow('./');
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                const reg = await navigator.serviceWorker.register(swUrl);
+                swRegistrationRef = reg;
+                return reg;
+            } catch (err) {
+                console.warn('ServiceWorker registration fallback:', err);
+                return null;
+            }
+        }
+
+        function updateNotificationPermissionUI() {
+            const banner = document.getElementById('notif-permission-banner');
+            const icon = document.getElementById('icon-notif-perm');
+            const btn = document.getElementById('btn-notif-perm');
+            if (!('Notification' in window)) {
+                if (banner) banner.classList.add('hidden');
+                return;
+            }
+            const perm = Notification.permission;
+            if (perm === 'granted') {
+                if (banner) banner.classList.add('hidden');
+                if (icon) icon.className = 'fas fa-bell text-emerald-300';
+                if (btn) btn.title = 'Notifikasi Eksternal Android & Layar Kunci Aktif';
+            } else {
+                if (banner) banner.classList.remove('hidden');
+                if (icon) icon.className = 'fas fa-bell-slash text-amber-300';
+                if (btn) btn.title = 'Izinkan Notifikasi Eksternal Android';
+            }
+        }
+
+        window.requestAndroidExternalNotificationPermission = async function(showFeedbackDialog = false) {
+            await registerAndroidSystemNotificationWorker();
+            if (window.Android && typeof window.Android.requestNotificationPermission === 'function') {
+                try { window.Android.requestNotificationPermission(); } catch (_) {}
+            }
+            if (!('Notification' in window)) {
+                if (showFeedbackDialog) {
+                    showDialog('Info Perangkat', 'Perangkat menggunakan getaran & notifikasi sistem bawaan.', 'info');
+                }
+                return false;
+            }
+            try {
+                const permission = await Notification.requestPermission();
+                updateNotificationPermissionUI();
+                if (permission === 'granted') {
+                    await dispatchAndroidExternalNotification(
+                        'Gageh Surian Aktif',
+                        'Notifikasi eksternal bilah atas & layar kunci Android telah aktif.',
+                        { tag: 'gageh-surian-ready', isRingtone: false }
+                    );
+                    if (showFeedbackDialog) {
+                        showDialog('Notifikasi Eksternal Aktif', 'Banner notifikasi sistem Android akan muncul di bagian atas layar & layar kunci menggunakan volume notifikasi perangkat.');
+                    }
+                    return true;
+                } else if (showFeedbackDialog) {
+                    showDialog('Izin Notifikasi Diblokir', 'Buka Pengaturan HP > Aplikasi > Gageh Surian / Chrome > Notifikasi, lalu aktifkan agar notifikasi muncul di layar kunci & bilah atas.', 'error');
+                }
+            } catch (err) {
+                console.error('Permission error:', err);
+            }
+            return false;
+        };
+
+        /**
+         * Mengirim Notifikasi Eksternal Sistem Android (Heads-Up Banner Atas & Lock Screen).
+         * - `silent: false` memaksa Android menggunakan saluran VOLUME NOTIFIKASI / DERING sistem (bukan volume Media).
+         * - `renotify: true` & `requireInteraction: true` memicu banner pop-up di bagian atas layar Android dan tampil di layar kunci.
+         */
+        async function dispatchAndroidExternalNotification(title, body, options = {}) {
+            const {
+                tag = 'gageh-ext-' + Date.now(),
+                isRingtone = false,
+                requireInteraction = true
+            } = options;
+
+            // 1. Jika dibungkus APK Android Native dengan JavascriptInterface, panggil NotificationChannel IMPORTANCE_HIGH + VISIBILITY_PUBLIC
+            if (window.Android && typeof window.Android.showExternalNotification === 'function') {
+                try {
+                    window.Android.showExternalNotification(title, body, isRingtone ? 'ringtone' : 'notification');
+                    return;
+                } catch (_) {}
+            }
+            if (window.Android && typeof window.Android.showNotification === 'function') {
+                try {
+                    window.Android.showNotification(title, body);
+                    return;
+                } catch (_) {}
+            }
+
+            // 2. Getaran sistem
+            if (navigator.vibrate) {
+                navigator.vibrate(isRingtone ? [700, 350, 700, 350, 700] : [250, 120, 250]);
+            }
+
+            // 3. System Notification API (Android OS Heads-Up Banner + Lock Screen + Notification Volume Channel)
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const systemNotifOptions = {
+                    body: body,
+                    icon: ANDROID_APP_ICON_DATA,
+                    badge: ANDROID_APP_ICON_DATA,
+                    tag: tag,
+                    renotify: true,
+                    silent: false, // Penting: Memakai Volume Notifikasi/Dering Android, BUKAN Volume Media
+                    requireInteraction: requireInteraction,
+                    vibrate: isRingtone ? [700, 350, 700, 350, 700] : [250, 120, 250],
+                    timestamp: Date.now(),
+                    data: { url: window.location.href }
+                };
+
+                try {
+                    const reg = swRegistrationRef || (await navigator.serviceWorker.getRegistration());
+                    if (reg && typeof reg.showNotification === 'function') {
+                        await reg.showNotification(title, systemNotifOptions);
+                        return;
+                    }
+                } catch (_) {}
+
+                try {
+                    const sysNotif = new Notification(title, systemNotifOptions);
+                    sysNotif.onclick = () => {
+                        window.focus();
+                        sysNotif.close();
+                    };
+                } catch (err) {
+                    console.warn('External Notification error:', err);
+                }
+            }
+        }
+
+        function triggerFeedback(type = 'notify', externalTitle = null, externalBody = null) {
+            const isRing = type === 'ring';
+            if (navigator.vibrate) {
+                navigator.vibrate(isRing ? [700, 350, 700, 350, 700] : [250, 120, 250]);
+            }
+            if (externalTitle && externalBody) {
+                dispatchAndroidExternalNotification(externalTitle, externalBody, {
+                    tag: isRing ? 'gageh-ring-alert' : 'gageh-update-' + Date.now(),
+                    isRingtone: isRing,
+                    requireInteraction: true
+                });
+            }
+        }
+
+        function startContinuousRing(ringTitle = 'Orderan Baru Masuk!', ringBody = 'Ketuk untuk membuka pesanan di Gageh Surian.') {
+            stopContinuousRing();
+            dispatchAndroidExternalNotification(ringTitle, ringBody, {
+                tag: 'gageh-incoming-ring',
+                isRingtone: true,
+                requireInteraction: true
+            });
+            ringInterval = setInterval(() => {
+                if (navigator.vibrate) navigator.vibrate([700, 350, 700]);
+                dispatchAndroidExternalNotification(ringTitle, ringBody, {
+                    tag: 'gageh-incoming-ring',
+                    isRingtone: true,
+                    requireInteraction: true
+                });
+            }, 4000);
+        }
+
+        function stopContinuousRing() {
+            if (ringInterval) { clearInterval(ringInterval); ringInterval = null; }
+            if (navigator.vibrate) navigator.vibrate(0);
+        }
+
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        };
+        let peerConnection = null, localAudioStream = null, remoteAudioStream = null, callDurationTimer = null, callSeconds = 0, isMicMuted = false, isSpeakerLoud = true, currentCallRole = null, remoteOfferApplied = false, remoteAnswerApplied = false, pendingIceCandidates = [];
+
+        function generateRandomCode(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let res = '';
+            for (let i = 0; i < length; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            return res;
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        function sanitizeChatMessage(text) {
+            return text.replace(/(\+62|62|0)[\s-]?8[1-9][0-9\s-]{6,13}|\b\d{9,15}\b/g, '[Nomor Disembunyikan]');
+        }
+
+        function compressImageToDataUrl(file, maxSide = 820, quality = 0.72) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        if (w > maxSide || h > maxSide) {
+                            if (w > h) { h = Math.round((h * maxSide) / w); w = maxSide; }
+                            else { w = Math.round((w * maxSide) / h); h = maxSide; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const SESSION_STORAGE_KEY = 'GAGEH_SURIAN_PERMANENT_SESSION_V2';
+        const IDB_NAME = 'GagehSurianPersistDB';
+        const IDB_STORE = 'sessionStore';
+
+        function writeSessionToIndexedDB(jsonString) {
+            try {
+                if (!window.indexedDB) return;
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const idb = e.target.result;
+                    if (!idb.objectStoreNames.contains(IDB_STORE)) idb.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = (e) => {
+                    const tx = e.target.result.transaction(IDB_STORE, 'readwrite');
+                    tx.objectStore(IDB_STORE).put(jsonString, SESSION_STORAGE_KEY);
+                };
+            } catch (_) {}
+        }
+
+        function readSessionFromIndexedDB() {
+            return new Promise((resolve) => {
+                try {
+                    if (!window.indexedDB) return resolve(null);
+                    const req = indexedDB.open(IDB_NAME, 1);
+                    req.onupgradeneeded = (e) => {
+                        const idb = e.target.result;
+                        if (!idb.objectStoreNames.contains(IDB_STORE)) idb.createObjectStore(IDB_STORE);
+                    };
+                    req.onsuccess = (e) => {
+                        const tx = e.target.result.transaction(IDB_STORE, 'readonly');
+                        const getReq = tx.objectStore(IDB_STORE).get(SESSION_STORAGE_KEY);
+                        getReq.onsuccess = () => resolve(getReq.result || null);
+                        getReq.onerror = () => resolve(null);
+                    };
+                    req.onerror = () => resolve(null);
+                } catch (_) { resolve(null); }
+            });
+        }
+
+        function deleteSessionFromIndexedDB() {
+            try {
+                if (!window.indexedDB) return;
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    if (idb.objectStoreNames.contains(IDB_STORE)) {
+                        idb.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE).delete(SESSION_STORAGE_KEY);
+                    }
+                };
+            } catch (_) {}
+        }
+
+        window.persistFullAppState = function() {
+            if (isLoggingOut || !appState.role || !appState.userData) return;
+            const activeDetailEl = document.getElementById('modal-active-detail');
+            appState.uiState = {
+                activeDetailOpen: activeDetailEl ? !activeDetailEl.classList.contains('hidden') : false,
+                scrollY: window.scrollY || 0
+            };
+            const payload = {
+                role: appState.role,
+                userData: appState.userData,
+                location: appState.location,
+                selectedService: appState.selectedService,
+                activeOrderId: appState.activeOrderId,
+                activeOrderData: appState.activeOrderData,
+                uiState: appState.uiState,
+                savedAt: Date.now()
+            };
+            try {
+                const jsonStr = JSON.stringify(payload);
+                localStorage.setItem(SESSION_STORAGE_KEY, jsonStr);
+                sessionStorage.setItem(SESSION_STORAGE_KEY, jsonStr);
+                writeSessionToIndexedDB(jsonStr);
+                window.name = 'GAGEH_SESSION_' + btoa(encodeURIComponent(jsonStr));
+            } catch (_) {}
+        };
+
+        function saveSessionState() { window.persistFullAppState(); }
+
+        async function loadSessionState() {
+            try {
+                let rawJson = localStorage.getItem(SESSION_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
+                if (!rawJson) rawJson = await readSessionFromIndexedDB();
+                if (!rawJson && window.name && window.name.startsWith('GAGEH_SESSION_')) {
+                    rawJson = decodeURIComponent(atob(window.name.replace('GAGEH_SESSION_', '')));
+                }
+                if (rawJson) {
+                    const parsed = JSON.parse(rawJson);
+                    if (parsed && parsed.role && parsed.userData) {
+                        appState.role = parsed.role;
+                        appState.userData = {
+                            ...parsed.userData,
+                            server: String(parsed.userData.server || DEFAULT_ACCOUNT_SERVER).trim() || DEFAULT_ACCOUNT_SERVER
+                        };
+                        if (parsed.location && parsed.location.kecamatan) {
+                            appState.location = {
+                                ...appState.location,
+                                ...parsed.location,
+                                currentLocationLabel: parsed.location.currentLocationLabel || parsed.location.kecamatan,
+                                server: appState.userData.server
+                            };
+                        } else {
+                            appState.location.server = appState.userData.server;
+                        }
+                        appState.selectedService = parsed.selectedService || 'Bike';
+                        appState.activeOrderId = parsed.activeOrderId || null;
+                        appState.activeOrderData = parsed.activeOrderData || null;
+                        appState.uiState = parsed.uiState || { activeDetailOpen: false, scrollY: 0 };
+                        return true;
+                    }
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        function clearSessionState() {
+            isLoggingOut = true;
+            try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch (_) {}
+            try { sessionStorage.removeItem(SESSION_STORAGE_KEY); } catch (_) {}
+            deleteSessionFromIndexedDB();
+            window.name = '';
+            try { history.replaceState(null, null, window.location.pathname + window.location.search); } catch (_) {}
+        }
+
+        function handleAccountDeletedByAdmin() {
+            clearSessionState();
+            appState.role = null; appState.userData = null; appState.activeOrderId = null; appState.activeOrderData = null;
+            [unsubDriverDoc, unsubPassengerDoc, unsubDriverTopups, unsubOrders, unsubChats, unsubCalls].forEach(fn => { if (fn) fn(); });
+            unsubDriverDoc = unsubPassengerDoc = unsubDriverTopups = unsubOrders = unsubChats = unsubCalls = null;
+            ['modal-active-detail', 'modal-incoming-order', 'modal-voice-call', 'modal-topup', 'modal-account-history', 'modal-order-form', 'modal-trx-detail', 'modal-cs'].forEach(id => closeModal(id));
+            document.getElementById('active-order-drawer').classList.add('hidden');
+            document.getElementById('pax-searching-box').classList.add('hidden');
+            document.getElementById('view-passenger').classList.add('hidden');
+            document.getElementById('view-driver').classList.add('hidden');
+            document.getElementById('view-landing').classList.remove('hidden');
+            triggerFeedback('notify', 'Akun Dihapus', 'Akun ini sudah dihapus karena pelanggaran atau aktivitas mencurigakan.');
+            showDialog('Akun Dihapus', 'Akun ini sudah dihapus karena pelanggaran atau aktivitas mencurigakan.', 'error');
+        }
+
+        window.addEventListener('beforeunload', () => { if (!isLoggingOut) window.persistFullAppState(); });
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !isLoggingOut) window.persistFullAppState(); });
+
+        function getActiveAccountServer() {
+            const srv = appState.userData && appState.userData.server
+                ? String(appState.userData.server).trim()
+                : String(appState.location.server || DEFAULT_ACCOUNT_SERVER).trim();
+            return srv || DEFAULT_ACCOUNT_SERVER;
+        }
+
+        function getCurrentLocationLabel() {
+            return appState.location.currentLocationLabel || appState.location.kecamatan || 'Pantai Cermin';
+        }
+
+        function applyLocationToUI(currentLocationLabel, showPopupOnSuccess = false) {
+            const cleanLoc = (currentLocationLabel || appState.location.kecamatan || 'Pantai Cermin').replace(/^Kecamatan\s+/i, '');
+            const serverCode = getActiveAccountServer();
+            const statusText = document.getElementById('server-status-text');
+            const dot = document.getElementById('server-dot');
+            const ping = document.getElementById('server-ping');
+            if (dot) dot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400';
+            if (ping) ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75';
+            if (statusText) statusText.innerText = `Server ${serverCode} • ${cleanLoc}`;
+            const paxBadge = document.getElementById('pax-kecamatan-badge');
+            if (paxBadge) paxBadge.innerText = `Lokasi Terkini: ${cleanLoc} • Server ${serverCode}`;
+            const drvServerInfo = document.getElementById('drv-server-info');
+            if (drvServerInfo) drvServerInfo.innerText = `Standby di Server ${serverCode} • Lokasi: ${cleanLoc}`;
+            if (showPopupOnSuccess) {
+                showDialog('Lokasi & Server Terupdate', `Lokasi terkini Anda: ${cleanLoc} (${Number(appState.location.lat).toFixed(5)}, ${Number(appState.location.lng).toFixed(5)}) • Terhubung ke Server ${serverCode}.`);
+            }
+        }
+
+        async function detectKecamatanFromCoords(lat, lng) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 4500);
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, { signal: controller.signal });
+                clearTimeout(timer);
+                const data = await res.json();
+                const addr = data.address || {};
+                const kec = addr.city_district || addr.suburb || addr.district || addr.municipality || addr.town || addr.county || 'Pantai Cermin';
+                return kec.replace(/^Kecamatan\s+/i, '');
+            } catch (e) {
+                clearTimeout(timer);
+                return appState.location.kecamatan || 'Pantai Cermin';
+            }
+        }
+
+        async function syncAccountTelemetryToAdmin(forceSync = false) {
+            if (!appState.role || !appState.userData || !appState.userData.id) return;
+            const lat = Number(appState.location.lat);
+            const lng = Number(appState.location.lng);
+            const locLabel = getCurrentLocationLabel();
+            const serverCode = getActiveAccountServer();
+            const nowMs = Date.now();
+            const telemetryPayload = {
+                accountId: appState.userData.id,
+                accountName: appState.userData.name || '-',
+                role: appState.role,
+                server: serverCode,
+                lat: isNaN(lat) ? -1.1167 : lat,
+                lng: isNaN(lng) ? 100.7833 : lng,
+                kecamatan: locLabel,
+                currentLocation: locLabel,
+                isOnline: appState.role === 'driver' ? !!appState.userData.isOnline : true,
+                vehicle: appState.role === 'driver' ? (appState.userData.vehicle || null) : null,
+                plat: appState.role === 'driver' ? (appState.userData.plat || null) : null,
+                updatedAt: nowMs,
+                lastSeen: nowMs
+            };
+            try {
+                await ensureFirebaseAuth();
+                const accountUpdate = { lat: telemetryPayload.lat, lng: telemetryPayload.lng, kecamatan: locLabel, currentLocation: locLabel, server: serverCode, lastSeen: nowMs };
+                if (appState.role === 'driver') {
+                    await getPublicDoc('drivers', appState.userData.id).set(accountUpdate, { merge: true });
+                } else if (appState.role === 'passenger') {
+                    await getPublicDoc('passengers', appState.userData.id).set({ id: appState.userData.id, name: appState.userData.name, ...accountUpdate }, { merge: true });
+                }
+                await getPublicDoc('account_locations', `${appState.role}_${appState.userData.id}`).set(telemetryPayload, { merge: true });
+                if (forceSync) {
+                    await getPublicCol('device_locations').doc(`${appState.role}_${appState.userData.id}`).set(telemetryPayload, { merge: true });
+                }
+            } catch (err) {
+                console.error("Sync Telemetry to Admin Error:", err);
+            }
+        }
+
+        window.refreshLocation = (showPopupOnSuccess = false) => {
+            const statusText = document.getElementById('server-status-text');
+            const dot = document.getElementById('server-dot');
+            const ping = document.getElementById('server-ping');
+            if (statusText) statusText.innerText = 'Mendeteksi GPS Akurat...';
+            if (dot) dot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500';
+            if (ping) ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75';
+
+            const fallbackToDefault = () => {
+                const kec = getCurrentLocationLabel();
+                appState.location = { lat: appState.location.lat || -1.1167, lng: appState.location.lng || 100.7833, kecamatan: kec, currentLocationLabel: kec, server: getActiveAccountServer() };
+                saveSessionState();
+                applyLocationToUI(kec, showPopupOnSuccess);
+                syncAccountTelemetryToAdmin(true);
+            };
+
+            if (!navigator.geolocation) return fallbackToDefault();
+            let settled = false;
+            const safetyTimer = setTimeout(() => { if (!settled) { settled = true; fallbackToDefault(); } }, 5000);
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(safetyTimer);
+                const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                const kecamatan = await detectKecamatanFromCoords(lat, lng);
+                appState.location = { lat, lng, kecamatan, currentLocationLabel: kecamatan, server: getActiveAccountServer() };
+                saveSessionState();
+                applyLocationToUI(kecamatan, showPopupOnSuccess);
+                syncAccountTelemetryToAdmin(true);
+            }, () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(safetyTimer);
+                fallbackToDefault();
+            }, { enableHighAccuracy: true, timeout: 4500 });
+        };
+
+        function startLocationWatch() {
+            if (navigator.geolocation && !locationWatchId) {
+                locationWatchId = navigator.geolocation.watchPosition(async (pos) => {
+                    appState.location.lat = pos.coords.latitude;
+                    appState.location.lng = pos.coords.longitude;
+                    appState.location.server = getActiveAccountServer();
+                    saveSessionState();
+                    applyLocationToUI(getCurrentLocationLabel(), false);
+                    syncAccountTelemetryToAdmin(false);
+                }, () => {}, { enableHighAccuracy: true, maximumAge: 5000 });
+            }
+        }
+
+        async function ensureFirebaseAuth() {
+            getFirestoreInstance();
+            const authInst = getAuthInstance();
+            if (currentUserAuth) return currentUserAuth;
+            if (!authInst) { currentUserAuth = { uid: 'guest-' + Date.now() }; return currentUserAuth; }
+            if (authInst.currentUser) { currentUserAuth = authInst.currentUser; return currentUserAuth; }
+            return new Promise((resolve) => {
+                const timer = setTimeout(() => { currentUserAuth = { uid: 'guest-' + Date.now() }; resolve(currentUserAuth); }, 3000);
+                authInst.signInAnonymously().then((cred) => { clearTimeout(timer); currentUserAuth = cred.user; resolve(currentUserAuth); }).catch(() => { clearTimeout(timer); currentUserAuth = { uid: 'guest-' + Date.now() }; resolve(currentUserAuth); });
+            });
+        }
+
+        async function initApp() {
+            await registerAndroidSystemNotificationWorker();
+            updateNotificationPermissionUI();
+            applyLocationToUI(getCurrentLocationLabel(), false);
+            refreshLocation(false);
+            startLocationWatch();
+            try { await ensureFirebaseAuth(); } catch (_) {}
+            const restored = await loadSessionState();
+            if (restored) {
+                isLoggingOut = false;
+                if (appState.role === 'passenger') enterPassengerDashboard(false);
+                else if (appState.role === 'driver') enterDriverDashboard(false);
+            }
+        }
+
+        window.loginPassenger = async () => {
+            const nameInput = document.getElementById('input-pax-name').value.trim();
+            if (!nameInput) return showDialog('Nama Diperlukan', 'Silakan masukkan nama Anda terlebih dahulu.', 'error');
+            requestAndroidExternalNotificationPermission(false);
+            isLoggingOut = false;
+            const paxId = 'PAX-' + generateRandomCode(6);
+            const currentLoc = getCurrentLocationLabel();
+            const paxRecord = {
+                id: paxId, name: nameInput, server: DEFAULT_ACCOUNT_SERVER, kecamatan: currentLoc, currentLocation: currentLoc,
+                lat: appState.location.lat || -1.1167, lng: appState.location.lng || 100.7833, createdAt: Date.now(), lastSeen: Date.now()
+            };
+            appState.role = 'passenger'; appState.userData = paxRecord; appState.location.server = DEFAULT_ACCOUNT_SERVER;
+            saveSessionState();
+            try {
+                await ensureFirebaseAuth();
+                await getPublicDoc('passengers', paxId).set(paxRecord, { merge: true });
+            } catch (_) {}
+            syncAccountTelemetryToAdmin(true);
+            closeModal('modal-passenger-auth');
+            enterPassengerDashboard(true);
+        };
+
+        function listenPassengerDocDeletion() {
+            if (unsubPassengerDoc) unsubPassengerDoc();
+            if (!appState.userData || !appState.userData.id) return;
+            try {
+                let docWasSeen = false;
+                unsubPassengerDoc = getPublicDoc('passengers', appState.userData.id).onSnapshot((docSnap) => {
+                    if (isLoggingOut) return;
+                    if (!docSnap.exists) { if (docWasSeen) handleAccountDeletedByAdmin(); return; }
+                    docWasSeen = true;
+                    const data = docSnap.data();
+                    if (data.deletedByAdmin || data.status === 'deleted') { handleAccountDeletedByAdmin(); return; }
+                    const prevServer = appState.userData && appState.userData.server ? String(appState.userData.server) : DEFAULT_ACCOUNT_SERVER;
+                    const nextServer = data.server ? String(data.server).trim() : prevServer;
+                    appState.userData = { ...appState.userData, ...data, server: nextServer };
+                    appState.location.server = nextServer;
+                    saveSessionState();
+                    const nameEl = document.getElementById('pax-display-name');
+                    if (nameEl && data.name) nameEl.innerText = data.name;
+                    applyLocationToUI(getCurrentLocationLabel(), false);
+                }, (err) => console.error("Listener Passenger Error:", err));
+            } catch (err) {
+                console.error("Setup Listener Passenger Error:", err);
+            }
+        }
+
+        function enterPassengerDashboard(showLocationAlert = true) {
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-driver').classList.add('hidden');
+            document.getElementById('view-passenger').classList.remove('hidden');
+            document.getElementById('pax-display-name').innerText = appState.userData.name;
+            updateNotificationPermissionUI();
+            applyLocationToUI(getCurrentLocationLabel(), false);
+            syncAccountTelemetryToAdmin(true);
+            if (appState.activeOrderId && appState.activeOrderData) {
+                if (appState.activeOrderData.status === 'searching') document.getElementById('pax-searching-box').classList.remove('hidden');
+                else if (['accepted', 'arrived'].includes(appState.activeOrderData.status)) {
+                    updateActiveDrawerUI(appState.activeOrderData);
+                    if (appState.uiState && appState.uiState.activeDetailOpen) openActiveOrderDetail();
+                }
+            }
+            if (showLocationAlert) refreshLocation(true);
+            listenPassengerDocDeletion();
+            listenPassengerOrders();
+            listenIncomingCalls();
+        }
+
+        window.openOrderForm = (serviceType) => {
+            if (appState.activeOrderId) return showDialog('Transaksi Berjalan', 'Selesaikan terlebih dahulu pesanan Anda yang sedang aktif di laci bawah.', 'error');
+            appState.selectedService = serviceType;
+            document.getElementById('order-modal-title').innerText = `Pesan ${serviceType}`;
+            const iconBox = document.getElementById('order-modal-icon'), delivBox = document.getElementById('delivery-vehicle-selector');
+            if (serviceType === 'Bike') { iconBox.innerHTML = '<i class="fas fa-motorcycle"></i>'; delivBox.classList.add('hidden'); }
+            else if (serviceType === 'Cars') { iconBox.innerHTML = '<i class="fas fa-car"></i>'; delivBox.classList.add('hidden'); }
+            else { iconBox.innerHTML = '<i class="fas fa-box-open"></i>'; delivBox.classList.remove('hidden'); }
+            openModal('modal-order-form');
+        };
+
+        window.submitPassengerOrder = async () => {
+            const pickup = document.getElementById('order-pickup').value.trim();
+            const destination = document.getElementById('order-destination').value.trim();
+            const fare = parseRupiah(document.getElementById('order-fare').value);
+            if (!pickup || !destination || fare < 1000) return showDialog('Data Belum Lengkap', 'Harap isi titik jemput, titik tujuan, dan tawaran ongkos minimal Rp 1.000.', 'error');
+
+            requestAndroidExternalNotificationPermission(false);
+            const submitBtn = document.getElementById('btn-submit-pax-order');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghubungkan Server...';
+            }
+
+            try {
+                await ensureFirebaseAuth();
+                let vehicleNeeded = appState.selectedService === 'Delivery' ? document.querySelector('input[name="delivery-armada"]:checked').value : appState.selectedService;
+                const paxServer = getActiveAccountServer();
+                const currentLocLabel = getCurrentLocationLabel();
+                const paxLat = Number(appState.location.lat) || -1.1167;
+                const paxLng = Number(appState.location.lng) || 100.7833;
+                const driversSnap = await getPublicCol('drivers').get();
+                let availableDrivers = [];
+                driversSnap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const drvServer = String(d.server || DEFAULT_ACCOUNT_SERVER).trim();
+                    if (!d.deletedByAdmin && d.status !== 'deleted' && d.isOnline && d.balance >= 1500 && d.vehicle === vehicleNeeded && drvServer === paxServer) {
+                        availableDrivers.push({ ...d, distance: calculateDistance(paxLat, paxLng, d.lat || paxLat, d.lng || paxLng) });
+                    }
+                });
+                availableDrivers.sort((a, b) => a.distance - b.distance);
+                if (availableDrivers.length === 0) {
+                    closeModal('modal-order-form');
+                    return showDialog('Driver Tidak Tersedia', `Maaf, belum ada mitra driver ${vehicleNeeded} yang aktif di Server ${paxServer} saat ini.`, 'error');
+                }
+                const trxId = generateRandomCode(16);
+                const candidateDriverIds = availableDrivers.map(d => d.id);
+                const nowMs = Date.now();
+                const orderData = {
+                    trxId, paxId: appState.userData.id, paxName: appState.userData.name, paxLat, paxLng,
+                    server: paxServer, kecamatan: currentLocLabel, currentLocation: currentLocLabel,
+                    serviceType: appState.selectedService, vehicleNeeded, pickup, destination, fare,
+                    status: 'searching', candidateDrivers: candidateDriverIds, currentDriverIndex: 0,
+                    targetDriverId: candidateDriverIds[0], offerSentAt: nowMs,
+                    driverId: null, driverName: null, driverPlat: null, createdAt: nowMs
+                };
+                await getPublicDoc('orders', trxId).set(orderData);
+                appState.activeOrderId = trxId; appState.activeOrderData = orderData;
+                saveSessionState();
+                closeModal('modal-order-form');
+                document.getElementById('pax-searching-box').classList.remove('hidden');
+                document.getElementById('pax-search-detail').innerText = `Menghubungi driver terdekat #1 (${availableDrivers[0].name}) di Server ${paxServer} • 15 detik...`;
+                listenPassengerOrders();
+            } catch (err) {
+                showDialog('Gagal Mencari Driver', `Terjadi gangguan: ${err.message || 'Koneksi server terputus.'}`, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-search-location"></i> Cari Driver Terdekat';
+                }
+            }
+        };
+
+        async function advanceOrderToNextDriver(order) {
+            if (!order || order.status !== 'searching') return;
+            const nextIdx = (order.currentDriverIndex || 0) + 1;
+            if (order.candidateDrivers && nextIdx < order.candidateDrivers.length) {
+                await getPublicDoc('orders', order.trxId).update({ currentDriverIndex: nextIdx, targetDriverId: order.candidateDrivers[nextIdx], offerSentAt: Date.now() });
+            } else {
+                await getPublicDoc('orders', order.trxId).update({ status: 'no_driver', targetDriverId: null });
+            }
+        }
+
+        function startPassengerOfferWatchdog(order) {
+            stopPassengerOfferWatchdog();
+            if (!order || order.status !== 'searching') return;
+            const offerStart = order.offerSentAt || order.createdAt || Date.now();
+            const updateCountdownUI = () => {
+                const elapsedSec = Math.floor((Date.now() - offerStart) / 1000);
+                const remaining = Math.max(0, OFFER_TIMEOUT_SECONDS - elapsedSec);
+                const idx = (order.currentDriverIndex || 0) + 1;
+                const total = order.candidateDrivers?.length || 1;
+                const detailEl = document.getElementById('pax-search-detail');
+                if (detailEl) detailEl.innerText = `Menawarkan ke driver terdekat #${idx} dari ${total} driver (${remaining} detik)...`;
+                if (elapsedSec >= OFFER_TIMEOUT_SECONDS) {
+                    stopPassengerOfferWatchdog();
+                    advanceOrderToNextDriver(order).catch(() => {});
+                }
+            };
+            updateCountdownUI();
+            paxOfferWatchdogTimer = setInterval(updateCountdownUI, 1000);
+        }
+
+        function stopPassengerOfferWatchdog() {
+            if (paxOfferWatchdogTimer) { clearInterval(paxOfferWatchdogTimer); paxOfferWatchdogTimer = null; }
+        }
+
+        function listenPassengerOrders() {
+            if (unsubOrders) unsubOrders();
+            try {
+                unsubOrders = getPublicCol('orders').onSnapshot((snapshot) => {
+                    if (!appState.activeOrderId) return;
+                    let orderStillExists = false;
+                    snapshot.forEach(docSnap => {
+                        const order = docSnap.data();
+                        if (order.trxId !== appState.activeOrderId) return;
+                        orderStillExists = true;
+                        const prevStatus = appState.activeOrderData?.status;
+                        appState.activeOrderData = order;
+                        saveSessionState();
+                        if (order.status === 'searching') {
+                            document.getElementById('pax-searching-box').classList.remove('hidden');
+                            startPassengerOfferWatchdog(order);
+                        } else if (order.status === 'accepted' || order.status === 'arrived') {
+                            stopPassengerOfferWatchdog();
+                            document.getElementById('pax-searching-box').classList.add('hidden');
+                            updateActiveDrawerUI(order);
+                            if (prevStatus !== order.status) {
+                                const extTitle = order.status === 'accepted' ? 'Driver Ditemukan!' : 'Driver Sudah Sampai!';
+                                const statusMsg = order.status === 'accepted'
+                                    ? `Driver ${order.driverName} (${order.driverPlat}) menerima pesanan Anda!`
+                                    : `Driver ${order.driverName} sudah sampai di titik jemput!`;
+                                triggerFeedback('notify', extTitle, statusMsg);
+                                showDialog('Update Status Pesanan', statusMsg);
+                            }
+                            if (!document.getElementById('modal-active-detail').classList.contains('hidden')) renderActiveDetailModal(order);
+                        } else if (['cancelled', 'no_driver', 'completed'].includes(order.status)) {
+                            stopPassengerOfferWatchdog();
+                            document.getElementById('pax-searching-box').classList.add('hidden');
+                            document.getElementById('active-order-drawer').classList.add('hidden');
+                            closeModal('modal-active-detail');
+                            appState.activeOrderId = null; appState.activeOrderData = null;
+                            saveSessionState();
+                            if (order.status === 'cancelled') {
+                                const cancelMsg = order.cancelledBy === 'admin' ? 'Pesanan ini telah dibatalkan oleh Admin Kontrol.' : 'Driver membatalkan pesanan ini. Silakan lakukan pemesanan ulang.';
+                                triggerFeedback('notify', 'Orderan Dibatalkan', cancelMsg);
+                                showDialog('Orderan Dibatalkan', cancelMsg, 'error');
+                            } else if (order.status === 'no_driver') {
+                                const noDrvMsg = 'Semua driver terdekat tidak merespons atau sedang sibuk. Silakan coba lagi atau naikkan tawaran ongkos.';
+                                triggerFeedback('notify', 'Belum Ada Driver', noDrvMsg);
+                                showDialog('Belum Ada Driver', noDrvMsg, 'error');
+                            } else {
+                                const doneMsg = `Terima kasih telah menggunakan Gageh Surian! Total ongkos: Rp ${formatRupiah(order.fare)}.`;
+                                triggerFeedback('notify', 'Perjalanan Selesai', doneMsg);
+                                showDialog('Perjalanan Selesai', doneMsg);
+                            }
+                        }
+                    });
+                    if (!orderStillExists && appState.activeOrderId) {
+                        stopPassengerOfferWatchdog();
+                        document.getElementById('pax-searching-box').classList.add('hidden');
+                        document.getElementById('active-order-drawer').classList.add('hidden');
+                        closeModal('modal-active-detail');
+                        appState.activeOrderId = null; appState.activeOrderData = null;
+                        saveSessionState();
+                    }
+                }, (err) => console.error("Listener Order Error:", err));
+            } catch (err) {
+                console.error("Setup Listener Order Error:", err);
+            }
+        }
+
+        window.cancelPassengerSearch = async () => {
+            if (!appState.activeOrderId) return;
+            stopPassengerOfferWatchdog();
+            try { await getPublicDoc('orders', appState.activeOrderId).update({ status: 'cancelled', targetDriverId: null }); } catch (e) {}
+            appState.activeOrderId = null; appState.activeOrderData = null;
+            saveSessionState();
+            document.getElementById('pax-searching-box').classList.add('hidden');
+        };
+
+        window.openPassengerHistory = async () => {
+            document.getElementById('history-modal-title').innerText = 'Akun & Riwayat Penumpang';
+            document.getElementById('prof-name').innerText = appState.userData.name;
+            document.getElementById('prof-sub').innerText = `ID: ${appState.userData.id} • Server ${getActiveAccountServer()}`;
+            openModal('modal-account-history');
+            const listEl = document.getElementById('transaction-list');
+            listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Memuat riwayat pesanan...</p>';
+            try {
+                await ensureFirebaseAuth();
+                const ordersSnap = await getPublicCol('orders').get();
+                let myOrders = [];
+                ordersSnap.forEach(d => {
+                    const o = d.data();
+                    if (o.paxId === appState.userData.id) myOrders.push({ ...o, category: 'Perjalanan', displayAmount: o.fare });
+                });
+                myOrders.sort((a, b) => b.createdAt - a.createdAt);
+                if (myOrders.length === 0) {
+                    listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Belum ada riwayat perjalanan.</p>';
+                    return;
+                }
+                listEl.innerHTML = myOrders.map(item => `
+                    <div onclick='showTrxDetail(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 cursor-pointer transition flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-xs text-emerald-700">${item.serviceType}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-200 text-slate-700">${item.status.toUpperCase()}</span>
+                            </div>
+                            <p class="text-[10px] font-mono text-slate-500 mt-1">ID: ${item.trxId}</p>
+                            <p class="text-[10px] text-slate-400">${new Date(item.createdAt).toLocaleString('id-ID')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-extrabold text-sm text-slate-800">Rp ${formatRupiah(item.displayAmount)}</p>
+                            <i class="fas fa-chevron-right text-slate-300 text-xs mt-1"></i>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = `<p class="text-xs text-rose-500 text-center py-6">Gagal memuat riwayat: ${err.message}</p>`;
+            }
+        };
+
+        window.registerDriver = async () => {
+            try {
+                await ensureFirebaseAuth();
+                const name = document.getElementById('reg-drv-name').value.trim();
+                const wa = document.getElementById('reg-drv-wa').value.trim();
+                const plat = document.getElementById('reg-drv-plat').value.trim().toUpperCase();
+                const vehicle = document.querySelector('input[name="reg-drv-vehicle"]:checked').value;
+                if (!name || !wa || !plat) return showDialog('Data Tidak Lengkap', 'Harap isi Nama, Nomor WhatsApp, dan Nomor Polisi kendaraan.', 'error');
+                requestAndroidExternalNotificationPermission(false);
+                isLoggingOut = false;
+                const driverId = generateRandomCode(6);
+                const currentLoc = getCurrentLocationLabel();
+                const newDriver = {
+                    id: driverId, name, wa, plat, vehicle, balance: 0, isOnline: false, server: DEFAULT_ACCOUNT_SERVER,
+                    lat: appState.location.lat || -1.1167, lng: appState.location.lng || 100.7833, kecamatan: currentLoc, currentLocation: currentLoc, createdAt: Date.now(), lastSeen: Date.now()
+                };
+                await getPublicDoc('drivers', driverId).set(newDriver);
+                appState.role = 'driver'; appState.userData = newDriver; appState.location.server = DEFAULT_ACCOUNT_SERVER;
+                saveSessionState();
+                syncAccountTelemetryToAdmin(true);
+                closeModal('modal-driver-auth');
+                enterDriverDashboard(true);
+            } catch (err) {
+                showDialog('Gagal Mendaftar', `Terjadi kendala server: ${err.message}`, 'error');
+            }
+        };
+
+        window.loginDriver = async () => {
+            try {
+                await ensureFirebaseAuth();
+                const identifier = document.getElementById('login-drv-identifier').value.trim().toUpperCase();
+                if (!identifier) return showDialog('Input Kosong', 'Masukkan ID Driver (6 digit) atau Nomor WhatsApp terdaftar.', 'error');
+                const snap = await getPublicCol('drivers').get();
+                let foundDriver = null;
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if ((d.id.toUpperCase() === identifier || d.wa === identifier) && !d.deletedByAdmin && d.status !== 'deleted') foundDriver = d;
+                });
+                if (!foundDriver) return showDialog('Akun Tidak Ditemukan', 'ID Driver atau Nomor WhatsApp tidak terdaftar atau telah dihapus oleh admin.', 'error');
+                requestAndroidExternalNotificationPermission(false);
+                isLoggingOut = false;
+                const drvServer = foundDriver.server ? String(foundDriver.server).trim() : DEFAULT_ACCOUNT_SERVER;
+                appState.role = 'driver'; appState.userData = { ...foundDriver, server: drvServer }; appState.location.server = drvServer;
+                saveSessionState();
+                syncAccountTelemetryToAdmin(true);
+                closeModal('modal-driver-auth');
+                enterDriverDashboard(true);
+            } catch (err) {
+                showDialog('Gagal Login', `Terjadi kendala server: ${err.message}`, 'error');
+            }
+        };
+
+        function enterDriverDashboard(showLocationAlert = true) {
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-passenger').classList.add('hidden');
+            document.getElementById('view-driver').classList.remove('hidden');
+            updateNotificationPermissionUI();
+            updateDriverUI(appState.userData);
+            applyLocationToUI(getCurrentLocationLabel(), false);
+            syncAccountTelemetryToAdmin(true);
+            try {
+                if (appState.userData && appState.userData.isOnline && appState.userData.balance >= 1500) {
+                    getPublicDoc('drivers', appState.userData.id).update({
+                        isOnline: true, lat: appState.location.lat, lng: appState.location.lng,
+                        kecamatan: getCurrentLocationLabel(), currentLocation: getCurrentLocationLabel(), server: getActiveAccountServer(), lastSeen: Date.now()
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+            if (appState.activeOrderId && appState.activeOrderData && ['accepted', 'arrived'].includes(appState.activeOrderData.status)) {
+                updateActiveDrawerUI(appState.activeOrderData);
+                if (appState.uiState && appState.uiState.activeDetailOpen) openActiveOrderDetail();
+            }
+            if (showLocationAlert) refreshLocation(true);
+            if (unsubDriverDoc) unsubDriverDoc();
+            try {
+                unsubDriverDoc = getPublicDoc('drivers', appState.userData.id).onSnapshot((docSnap) => {
+                    if (isLoggingOut) return;
+                    if (!docSnap.exists) return handleAccountDeletedByAdmin();
+                    const freshData = docSnap.data();
+                    if (freshData.deletedByAdmin || freshData.status === 'deleted') return handleAccountDeletedByAdmin();
+                    const prevBalance = Number(appState.userData?.balance) || 0;
+                    const nextBalance = Number(freshData.balance) || 0;
+                    const nextServer = freshData.server ? String(freshData.server).trim() : (appState.userData?.server || DEFAULT_ACCOUNT_SERVER);
+                    appState.userData = { ...freshData, server: nextServer };
+                    appState.location.server = nextServer;
+                    saveSessionState();
+                    updateDriverUI(appState.userData);
+                    applyLocationToUI(getCurrentLocationLabel(), false);
+                    if (nextBalance > prevBalance && !isLoggingOut) {
+                        const addMsg = `Saldo akun Anda bertambah sebesar Rp ${formatRupiah(nextBalance - prevBalance)} dari Admin Kontrol. Total saldo sekarang: Rp ${formatRupiah(nextBalance)}.`;
+                        triggerFeedback('notify', 'Saldo Driver Bertambah!', addMsg);
+                        showDialog('Saldo Bertambah!', addMsg);
+                    }
+                }, (err) => console.error(err));
+            } catch (_) {}
+            listenDriverTopupUpdates();
+            listenDriverOrders();
+            listenIncomingCalls();
+        }
+
+        function listenDriverTopupUpdates() {
+            if (unsubDriverTopups) unsubDriverTopups();
+            if (!appState.userData) return;
+            try {
+                const knownTopupStatuses = {};
+                let isInitialTopupSnap = true;
+                unsubDriverTopups = getPublicCol('topups').onSnapshot((snapshot) => {
+                    snapshot.forEach(docSnap => {
+                        const t = docSnap.data();
+                        if (t.driverId !== appState.userData.id) return;
+                        const prevSt = knownTopupStatuses[t.trxId];
+                        knownTopupStatuses[t.trxId] = t.status;
+                        if (isInitialTopupSnap) return;
+                        if (prevSt === 'pending' && t.status === 'approved') {
+                            const msg = `Permintaan Top Up sebesar Rp ${formatRupiah(t.amount)} (TRX: ${t.trxId}) telah disetujui dan ditambahkan ke saldo Anda.`;
+                            triggerFeedback('notify', 'Top Up Disetujui Admin!', msg);
+                            showDialog('Top Up Disetujui Admin!', msg);
+                        } else if (prevSt === 'pending' && t.status === 'rejected') {
+                            const msg = `Permintaan Top Up sebesar Rp ${formatRupiah(t.amount)} (TRX: ${t.trxId}) ditolak oleh Admin Kontrol. Silakan hubungi CS bila ada kendala.`;
+                            triggerFeedback('notify', 'Top Up Ditolak', msg);
+                            showDialog('Top Up Ditolak', msg, 'error');
+                        }
+                    });
+                    isInitialTopupSnap = false;
+                }, (err) => console.error("Listener Topups Error:", err));
+            } catch (_) {}
+        }
+
+        function updateDriverUI(driver) {
+            document.getElementById('drv-display-name').innerText = driver.name;
+            document.getElementById('drv-display-plat').innerText = driver.plat;
+            document.getElementById('drv-display-id').innerText = `ID: ${driver.id}`;
+            document.getElementById('drv-balance').innerText = `Rp ${formatRupiah(driver.balance)}`;
+            document.getElementById('drv-vehicle-icon').className = driver.vehicle === 'Cars' ? 'fas fa-car' : 'fas fa-motorcycle';
+            const toggle = document.getElementById('drv-online-toggle'), dot = document.getElementById('drv-status-dot'), title = document.getElementById('drv-status-title'), desc = document.getElementById('drv-status-desc'), radarOff = document.getElementById('drv-radar-offline'), radarOn = document.getElementById('drv-radar-online');
+            if (driver.balance < 1500 && driver.isOnline) {
+                toggle.checked = false;
+                try { getPublicDoc('drivers', driver.id).update({ isOnline: false }).catch(() => {}); } catch (_) {}
+                return;
+            }
+            toggle.checked = !!driver.isOnline;
+            if (driver.isOnline) {
+                dot.className = 'w-3 h-3 rounded-full bg-emerald-500 animate-ping';
+                title.innerText = 'Status Online (Aktif)'; title.className = 'font-bold text-base text-emerald-700'; desc.innerText = 'Siap menerima orderan terdekat';
+                radarOff.classList.add('hidden'); radarOn.classList.remove('hidden');
+            } else {
+                dot.className = 'w-3 h-3 rounded-full bg-slate-400';
+                title.innerText = 'Status Offline'; title.className = 'font-bold text-base text-slate-800'; desc.innerText = 'Aktifkan untuk mulai menerima orderan';
+                radarOn.classList.add('hidden'); radarOff.classList.remove('hidden');
+            }
+        }
+
+        window.toggleDriverOnline = async (checkbox) => {
+            if (!appState.userData) return;
+            const wantOnline = checkbox.checked;
+            if (wantOnline && appState.userData.balance < 1500) {
+                checkbox.checked = false;
+                return showDialog('Saldo Tidak Mencukupi', 'Saldo driver minimal Rp 1.500 untuk mengaktifkan mode menerima orderan. Silakan Top Up saldo terlebih dahulu.', 'error');
+            }
+            if (wantOnline) {
+                requestAndroidExternalNotificationPermission(false);
+            }
+            appState.userData.isOnline = wantOnline;
+            saveSessionState();
+            updateDriverUI(appState.userData);
+            try {
+                await ensureFirebaseAuth();
+                await getPublicDoc('drivers', appState.userData.id).update({
+                    isOnline: wantOnline, lat: appState.location.lat, lng: appState.location.lng,
+                    kecamatan: getCurrentLocationLabel(), currentLocation: getCurrentLocationLabel(), server: getActiveAccountServer(), lastSeen: Date.now()
+                });
+                syncAccountTelemetryToAdmin(true);
+            } catch (err) { console.error("Toggle Online Update Error:", err); }
+        };
+
+        function listenDriverOrders() {
+            if (unsubOrders) unsubOrders();
+            try {
+                unsubOrders = getPublicCol('orders').onSnapshot((snapshot) => {
+                    let hasIncoming = false, activeOrderStillValid = false;
+                    snapshot.forEach(docSnap => {
+                        const order = docSnap.data();
+                        if (order.driverId === appState.userData.id && ['accepted', 'arrived'].includes(order.status)) {
+                            activeOrderStillValid = true;
+                            appState.activeOrderId = order.trxId; appState.activeOrderData = order;
+                            saveSessionState();
+                            updateActiveDrawerUI(order);
+                            if (!document.getElementById('modal-active-detail').classList.contains('hidden')) renderActiveDetailModal(order);
+                        }
+                        if (appState.activeOrderId && order.trxId === appState.activeOrderId && order.status === 'cancelled') {
+                            activeOrderStillValid = false;
+                            appState.activeOrderId = null; appState.activeOrderData = null;
+                            saveSessionState();
+                            document.getElementById('active-order-drawer').classList.add('hidden');
+                            closeModal('modal-active-detail');
+                            triggerFeedback('notify', 'Orderan Dibatalkan', 'Pesanan ini telah dibatalkan.');
+                            showDialog('Orderan Dibatalkan', 'Pesanan ini telah dibatalkan.', 'error');
+                        }
+                        if (order.status === 'searching' && order.targetDriverId === appState.userData.id && appState.userData.isOnline && !appState.activeOrderId) {
+                            hasIncoming = true;
+                            if (!appState.incomingOrderData || appState.incomingOrderData.trxId !== order.trxId) {
+                                appState.incomingOrderData = order;
+                                showIncomingOrderPopup(order);
+                            }
+                        }
+                    });
+                    if (appState.activeOrderId && !activeOrderStillValid) {
+                        appState.activeOrderId = null; appState.activeOrderData = null;
+                        saveSessionState();
+                        document.getElementById('active-order-drawer').classList.add('hidden');
+                        closeModal('modal-active-detail');
+                    }
+                    if (!hasIncoming && appState.incomingOrderData) {
+                        stopIncomingOfferCountdown();
+                        appState.incomingOrderData = null;
+                        closeModal('modal-incoming-order');
+                        stopContinuousRing();
+                    }
+                }, (err) => console.error(err));
+            } catch (_) {}
+        }
+
+        function stopIncomingOfferCountdown() {
+            if (incomingOfferTimer) { clearInterval(incomingOfferTimer); incomingOfferTimer = null; }
+            activeOfferTrxId = null;
+        }
+
+        function startIncomingOfferCountdown(order) {
+            stopIncomingOfferCountdown();
+            activeOfferTrxId = order.trxId;
+            const offerStart = order.offerSentAt || Date.now();
+            const badgeEl = document.getElementById('inc-countdown-badge');
+            const tick = () => {
+                if (!appState.incomingOrderData || appState.incomingOrderData.trxId !== activeOfferTrxId) return stopIncomingOfferCountdown();
+                const remaining = Math.max(0, OFFER_TIMEOUT_SECONDS - Math.floor((Date.now() - offerStart) / 1000));
+                if (badgeEl) badgeEl.innerText = `${remaining}s`;
+                if (remaining <= 0) { stopIncomingOfferCountdown(); rejectIncomingOrder(); }
+            };
+            tick();
+            incomingOfferTimer = setInterval(tick, 1000);
+        }
+
+        function showIncomingOrderPopup(order) {
+            const dist = calculateDistance(appState.location.lat, appState.location.lng, order.paxLat, order.paxLng).toFixed(2);
+            document.getElementById('inc-service-badge').innerText = `${order.serviceType.toUpperCase()} • Rp ${formatRupiah(order.fare)}`;
+            document.getElementById('inc-distance-badge').innerText = `Jarak dari posisi Anda: ~${dist} km`;
+            document.getElementById('inc-pax-name').innerText = order.paxName;
+            document.getElementById('inc-pickup').innerText = order.pickup;
+            document.getElementById('inc-destination').innerText = order.destination;
+            document.getElementById('inc-coords').innerText = `${Number(order.paxLat).toFixed(5)}, ${Number(order.paxLng).toFixed(5)}`;
+            openModal('modal-incoming-order');
+            startContinuousRing(
+                `Orderan ${order.serviceType.toUpperCase()} Masuk! • Rp ${formatRupiah(order.fare)}`,
+                `Penumpang ${order.paxName} • Jemput: ${order.pickup} (~${dist} km)`
+            );
+            startIncomingOfferCountdown(order);
+        }
+
+        window.acceptIncomingOrder = async () => {
+            if (!appState.incomingOrderData) return;
+            stopIncomingOfferCountdown(); stopContinuousRing();
+            const order = appState.incomingOrderData;
+            await getPublicDoc('orders', order.trxId).update({ status: 'accepted', driverId: appState.userData.id, driverName: appState.userData.name, driverPlat: appState.userData.plat });
+            appState.activeOrderId = order.trxId;
+            appState.activeOrderData = { ...order, status: 'accepted', driverId: appState.userData.id, driverName: appState.userData.name, driverPlat: appState.userData.plat };
+            appState.incomingOrderData = null;
+            saveSessionState();
+            closeModal('modal-incoming-order');
+            openActiveOrderDetail();
+        };
+
+        window.rejectIncomingOrder = async () => {
+            if (!appState.incomingOrderData) return;
+            stopIncomingOfferCountdown(); stopContinuousRing();
+            const order = appState.incomingOrderData;
+            appState.incomingOrderData = null;
+            closeModal('modal-incoming-order');
+            try { await advanceOrderToNextDriver(order); } catch (e) {}
+        };
+
+        window.openTopupModal = () => {
+            document.getElementById('topup-driver-id').value = appState.userData.id;
+            document.getElementById('topup-amount').value = '';
+            clearTopupProof();
+            openModal('modal-topup');
+        };
+
+        window.copyRekening = () => {
+            const rek = document.getElementById('mandiri-rek').innerText;
+            const temp = document.createElement('input');
+            temp.value = rek; document.body.appendChild(temp); temp.select(); document.execCommand('copy'); document.body.removeChild(temp);
+            showDialog('Nomor Rekening Disalin', `Nomor rekening Mandiri ${rek} a.n. TOTA RAHMAN berhasil disalin.`);
+        };
+
+        window.handleTopupProofSelect = async (inputEl) => {
+            const file = inputEl.files && inputEl.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                inputEl.value = '';
+                return showDialog('Format Tidak Valid', 'Harap pilih file gambar bukti transfer dari galeri Anda.', 'error');
+            }
+            try {
+                const compressedDataUrl = await compressImageToDataUrl(file, 760, 0.72);
+                appState.topupProofDataUrl = compressedDataUrl; appState.topupProofFileName = file.name;
+                document.getElementById('topup-preview-img').src = compressedDataUrl;
+                document.getElementById('topup-file-name').innerText = file.name;
+                document.getElementById('topup-upload-placeholder').classList.add('hidden');
+                document.getElementById('topup-preview-box').classList.remove('hidden');
+            } catch (e) {
+                showDialog('Gagal Memuat Gambar', 'Terjadi kesalahan saat membaca gambar dari galeri. Silakan pilih gambar lain.', 'error');
+            }
+        };
+
+        window.clearTopupProof = () => {
+            appState.topupProofDataUrl = null; appState.topupProofFileName = '';
+            const inputEl = document.getElementById('topup-proof-input');
+            if (inputEl) inputEl.value = '';
+            document.getElementById('topup-preview-img').src = '';
+            document.getElementById('topup-preview-box').classList.add('hidden');
+            document.getElementById('topup-upload-placeholder').classList.remove('hidden');
+        };
+
+        window.submitTopupRequest = async () => {
+            const amount = parseRupiah(document.getElementById('topup-amount').value);
+            if (amount < 5000) return showDialog('Nominal Terlalu Kecil', 'Minimal pengisian saldo driver adalah Rp 5.000.', 'error');
+            if (!appState.topupProofDataUrl) return showDialog('Bukti Transfer Wajib', 'Silakan upload foto bukti transfer dari galeri terlebih dahulu.', 'error');
+            const btn = document.getElementById('btn-submit-topup');
+            btn.disabled = true; btn.innerText = 'Mengirim Bukti & Data...';
+            try {
+                await ensureFirebaseAuth();
+                const trxId = generateRandomCode(16);
+                await getPublicDoc('topups', trxId).set({
+                    trxId, driverId: appState.userData.id, driverName: appState.userData.name, amount,
+                    bankTarget: 'Bank Mandiri - 1110023034784 (TOTA RAHMAN)',
+                    proofImage: appState.topupProofDataUrl, proofFileName: appState.topupProofFileName || 'bukti-transfer.jpg',
+                    status: 'pending', createdAt: Date.now()
+                });
+                clearTopupProof();
+                closeModal('modal-topup');
+                showDialog('Permintaan Terkirim', `Permintaan Top Up sebesar Rp ${formatRupiah(amount)} beserta bukti transfer (ID Transaksi: ${trxId}) telah dikirim ke panel Admin Kontrol.`);
+            } catch (err) {
+                showDialog('Gagal Mengirim', `Terjadi kendala saat mengirim bukti transfer: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false; btn.innerText = 'Kirim Permintaan ke Admin';
+            }
+        };
+
+        window.openDriverAccountMenu = async () => {
+            document.getElementById('history-modal-title').innerText = 'Akun & Transaksi Driver';
+            document.getElementById('prof-name').innerText = `${appState.userData.name} (${appState.userData.plat})`;
+            document.getElementById('prof-sub').innerText = `ID: ${appState.userData.id} • Server ${getActiveAccountServer()}`;
+            openModal('modal-account-history');
+            const listEl = document.getElementById('transaction-list');
+            listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Memuat semua transaksi...</p>';
+            try {
+                await ensureFirebaseAuth();
+                const [ordersSnap, topupsSnap] = await Promise.all([getPublicCol('orders').get(), getPublicCol('topups').get()]);
+                let combined = [];
+                ordersSnap.forEach(d => { const o = d.data(); if (o.driverId === appState.userData.id) combined.push({ ...o, category: 'Perjalanan', displayAmount: o.fare }); });
+                topupsSnap.forEach(d => { const t = d.data(); if (t.driverId === appState.userData.id) combined.push({ ...t, category: 'Top Up Saldo', displayAmount: t.amount }); });
+                combined.sort((a, b) => b.createdAt - a.createdAt);
+                if (combined.length === 0) { listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Belum ada riwayat transaksi.</p>'; return; }
+                listEl.innerHTML = combined.map(item => `
+                    <div onclick='showTrxDetail(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-emerald-500 cursor-pointer transition flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-xs ${item.category === 'Top Up Saldo' ? 'text-blue-700' : 'text-emerald-700'}">${item.category}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-200 text-slate-700">${item.status.toUpperCase()}</span>
+                            </div>
+                            <p class="text-[10px] font-mono text-slate-500 mt-1">ID: ${item.trxId}</p>
+                            <p class="text-[10px] text-slate-400">${new Date(item.createdAt).toLocaleString('id-ID')}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-extrabold text-sm text-slate-800">Rp ${formatRupiah(item.displayAmount)}</p>
+                            <i class="fas fa-chevron-right text-slate-300 text-xs mt-1"></i>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = `<p class="text-xs text-rose-500 text-center py-6">Gagal memuat transaksi: ${err.message}</p>`;
+            }
+        };
+
+        window.showTrxDetail = (item) => {
+            const container = document.getElementById('trx-detail-content');
+            if (item.category === 'Top Up Saldo') {
+                const proofHtml = item.proofImage ? `<div class="pt-1"><span class="text-slate-400 block mb-1">Bukti Transfer:</span><img src="${item.proofImage}" alt="Bukti Transfer" class="w-full max-h-48 object-contain rounded-xl border border-slate-200 bg-slate-900"></div>` : '';
+                container.innerHTML = `<div class="p-3 bg-slate-50 rounded-xl space-y-2"><p><span class="text-slate-400 block">ID Transaksi:</span><strong class="font-mono">${item.trxId}</strong></p><p><span class="text-slate-400 block">ID Driver:</span><strong class="font-mono">${item.driverId}</strong></p><p><span class="text-slate-400 block">Jenis:</span><strong>Top Up Saldo Mitra</strong></p><p><span class="text-slate-400 block">Nominal:</span><strong class="text-emerald-600 text-sm">Rp ${formatRupiah(item.amount)}</strong></p><p><span class="text-slate-400 block">Status:</span><strong>${item.status.toUpperCase()}</strong></p><p><span class="text-slate-400 block">Waktu:</span><strong>${new Date(item.createdAt).toLocaleString('id-ID')}</strong></p>${proofHtml}</div>`;
+            } else {
+                container.innerHTML = `<div class="p-3 bg-slate-50 rounded-xl space-y-2"><p><span class="text-slate-400 block">ID Transaksi:</span><strong class="font-mono">${item.trxId}</strong></p><p><span class="text-slate-400 block">Layanan:</span><strong>${item.serviceType} (${item.vehicleNeeded})</strong></p><p><span class="text-slate-400 block">Penumpang:</span><strong>${item.paxName}</strong></p><p><span class="text-slate-400 block">Driver:</span><strong>${item.driverName || '-'} (${item.driverPlat || '-'})</strong></p><p><span class="text-slate-400 block">Jemput:</span><strong>${item.pickup}</strong></p><p><span class="text-slate-400 block">Tujuan:</span><strong>${item.destination}</strong></p><p><span class="text-slate-400 block">Ongkos:</span><strong class="text-emerald-600 text-sm">Rp ${formatRupiah(item.fare)}</strong></p><p><span class="text-slate-400 block">Status:</span><strong>${item.status.toUpperCase()}</strong></p></div>`;
+            }
+            openModal('modal-trx-detail');
+        };
+
+        function updateActiveDrawerUI(order) {
+            document.getElementById('active-order-drawer').classList.remove('hidden');
+            document.getElementById('drawer-service-type').innerText = `${order.serviceType} • Rp ${formatRupiah(order.fare)}`;
+            document.getElementById('drawer-status-text').innerText = order.status === 'arrived' ? 'Sudah di titik jemput • Menuju tujuan' : 'Menuju titik penjemputan';
+        }
+
+        window.openActiveOrderDetail = () => {
+            if (!appState.activeOrderData) return;
+            renderActiveDetailModal(appState.activeOrderData);
+            openModal('modal-active-detail');
+            listenChatMessages(appState.activeOrderData.trxId);
+        };
+
+        function renderActiveDetailModal(order) {
+            const cancelBtn = document.getElementById('btn-driver-cancel-order');
+            if (appState.role === 'driver') {
+                document.getElementById('act-partner-name').innerText = order.paxName;
+                document.getElementById('act-partner-sub').innerText = `Penumpang • ${order.currentLocation || order.kecamatan || getCurrentLocationLabel()}`;
+                document.getElementById('driver-swipe-controls').classList.remove('hidden');
+                if (cancelBtn) cancelBtn.classList.toggle('hidden', order.status !== 'accepted');
+                setupDriverSwipeAction(order);
+            } else {
+                document.getElementById('act-partner-name').innerText = order.driverName || 'Mitra Driver';
+                document.getElementById('act-partner-sub').innerText = `${order.driverPlat || ''} • ID: ${order.driverId || ''}`;
+                document.getElementById('driver-swipe-controls').classList.add('hidden');
+                if (cancelBtn) cancelBtn.classList.add('hidden');
+            }
+            document.getElementById('act-status-badge').innerText = order.status === 'arrived' ? 'Sudah Sampai Jemput' : 'Menuju Lokasi Jemput';
+            document.getElementById('act-fare-display').innerText = `Rp ${formatRupiah(order.fare)}`;
+            document.getElementById('act-pickup').innerText = order.pickup;
+            document.getElementById('act-destination').innerText = order.destination;
+            document.getElementById('act-trx-id').innerText = `ID TRX: ${order.trxId}`;
+        }
+
+        window.confirmDriverCancelOrder = () => {
+            const order = appState.activeOrderData;
+            if (!order || order.status !== 'accepted') return;
+            showDialog('Batalkan Orderan?', 'Apakah Anda yakin ingin membatalkan orderan ini? Pesanan akan dibatalkan dan ditutup.', 'confirm', async () => {
+                try { await getPublicDoc('orders', order.trxId).update({ status: 'cancelled', cancelledBy: 'driver', cancelledAt: Date.now() }); } catch (e) {}
+                appState.activeOrderId = null; appState.activeOrderData = null;
+                saveSessionState();
+                document.getElementById('active-order-drawer').classList.add('hidden');
+                closeModal('modal-active-detail');
+                triggerFeedback('notify', 'Orderan Dibatalkan', 'Anda telah membatalkan orderan tersebut.');
+                showDialog('Orderan Dibatalkan', 'Anda telah membatalkan orderan tersebut.');
+            });
+        };
+
+        window.openGoogleMapsNav = (source) => {
+            const order = source === 'incoming' ? appState.incomingOrderData : appState.activeOrderData;
+            if (!order || !order.paxLat || !order.paxLng) return;
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${order.paxLat},${order.paxLng}`, '_blank');
+        };
+
+        function setupDriverSwipeAction(order) {
+            const container = document.getElementById('swipe-container'), thumb = document.getElementById('swipe-thumb'), track = document.getElementById('swipe-track'), label = document.getElementById('swipe-label');
+            thumb.style.left = '4px'; track.style.width = '56px';
+            if (order.status === 'accepted') {
+                label.innerText = 'Geser: Sudah Sampai Jemput >>';
+                track.style.background = 'linear-gradient(90deg, #0284c7, #0369a1)';
+            } else {
+                label.innerText = 'Geser: Sampai Tujuan / Selesai >>';
+                track.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            }
+            let isDragging = false, startX = 0;
+            const onStart = (e) => { isDragging = true; startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX; };
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const maxMove = container.offsetWidth - thumb.offsetWidth - 8;
+                const delta = Math.max(0, Math.min(currentX - startX, maxMove));
+                thumb.style.left = (delta + 4) + 'px'; track.style.width = (delta + 56) + 'px';
+                if (delta >= maxMove * 0.88) { isDragging = false; thumb.style.left = (maxMove + 4) + 'px'; handleDriverSwipeComplete(order); }
+            };
+            const onEnd = () => { if (!isDragging) return; isDragging = false; thumb.style.left = '4px'; track.style.width = '56px'; };
+            thumb.onmousedown = onStart; thumb.ontouchstart = onStart; window.onmousemove = onMove; window.ontouchmove = onMove; window.onmouseup = onEnd; window.ontouchend = onEnd;
+        }
+
+        async function handleDriverSwipeComplete(order) {
+            triggerFeedback('notify');
+            if (order.status === 'accepted') {
+                const cancelBtn = document.getElementById('btn-driver-cancel-order');
+                if (cancelBtn) cancelBtn.classList.add('hidden');
+                await getPublicDoc('orders', order.trxId).update({ status: 'arrived' });
+            } else if (order.status === 'arrived') {
+                const newBalance = Math.max(0, (appState.userData.balance || 0) - 1500);
+                await getPublicDoc('orders', order.trxId).update({ status: 'completed', completedAt: Date.now() });
+                await getPublicDoc('drivers', appState.userData.id).update({ balance: newBalance, isOnline: newBalance >= 1500 ? appState.userData.isOnline : false });
+                appState.activeOrderId = null; appState.activeOrderData = null;
+                saveSessionState();
+                document.getElementById('active-order-drawer').classList.add('hidden');
+                closeModal('modal-active-detail');
+                showDialog('Orderan Selesai!', `Perjalanan selesai. Saldo Anda otomatis terpotong Rp 1.500 (Sisa Saldo: Rp ${formatRupiah(newBalance)}).`);
+            }
+        }
+
+        window.openChatImageZoom = (src) => {
+            if (!src) return;
+            document.getElementById('chat-zoom-img').src = src;
+            openModal('modal-chat-image-zoom');
+        };
+
+        window.handleChatImageUpload = async (inputEl) => {
+            const file = inputEl.files && inputEl.files[0];
+            if (!file || !appState.activeOrderId) return;
+            if (!file.type.startsWith('image/')) { inputEl.value = ''; return showDialog('Format Tidak Valid', 'Harap pilih file foto/gambar dari galeri Anda.', 'error'); }
+            const btn = document.getElementById('btn-chat-gallery');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>'; }
+            try {
+                await ensureFirebaseAuth();
+                const imageDataUrl = await compressImageToDataUrl(file, 720, 0.7);
+                await getPublicDoc('orders', appState.activeOrderId).collection('messages').add({
+                    senderId: appState.userData.id, senderName: appState.userData.name, text: '', imageData: imageDataUrl, timestamp: Date.now()
+                });
+            } catch (err) {
+                showDialog('Gagal Mengirim Foto', `Terjadi kendala saat mengirim gambar: ${err.message}`, 'error');
+            } finally {
+                inputEl.value = '';
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-image text-base"></i>'; }
+            }
+        };
+
+        function listenChatMessages(trxId) {
+            if (unsubChats) unsubChats();
+            try {
+                let lastKnownChatCount = -1;
+                unsubChats = getPublicDoc('orders', trxId).collection('messages').onSnapshot((snapshot) => {
+                    let msgs = [];
+                    snapshot.forEach(d => msgs.push(d.data()));
+                    msgs.sort((a, b) => a.timestamp - b.timestamp);
+                    if (lastKnownChatCount !== -1 && msgs.length > lastKnownChatCount) {
+                        const newest = msgs[msgs.length - 1];
+                        if (newest && newest.senderId !== appState.userData.id) {
+                            const chatModalHidden = document.getElementById('modal-active-detail').classList.contains('hidden');
+                            if (chatModalHidden || document.visibilityState === 'hidden') {
+                                triggerFeedback(
+                                    'notify',
+                                    `Pesan Baru dari ${newest.senderName || 'Partner'}`,
+                                    newest.text ? newest.text : 'Mengirimkan foto baru'
+                                );
+                            }
+                        }
+                    }
+                    lastKnownChatCount = msgs.length;
+                    const box = document.getElementById('chat-messages');
+                    const notice = `<div class="text-center mb-2"><span class="text-[10px] bg-slate-200 text-slate-600 px-3 py-1 rounded-full">Demi keamanan, pengiriman nomor HP/WA otomatis disembunyikan.</span></div>`;
+                    box.innerHTML = notice + msgs.map(m => {
+                        const isMine = m.senderId === appState.userData.id;
+                        const imgHtml = m.imageData ? `<img src="${m.imageData}" onclick="openChatImageZoom(this.src)" alt="Foto Chat" class="max-h-52 w-auto rounded-xl cursor-pointer object-cover ${m.text ? 'mb-1.5' : ''}">` : '';
+                        const textHtml = m.text ? `<p class="leading-relaxed">${escapeHtml(m.text)}</p>` : '';
+                        return `<div class="flex flex-col ${isMine ? 'items-end' : 'items-start'}"><div class="max-w-[78%] ${m.imageData && !m.text ? 'p-1.5' : 'px-3.5 py-2.5'} rounded-2xl text-xs shadow-sm ${isMine ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-white text-slate-800 rounded-bl-none border border-slate-200'}">${imgHtml}${textHtml}</div><span class="text-[9px] text-slate-400 mt-0.5 px-1">${new Date(m.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span></div>`;
+                    }).join('');
+                    box.scrollTop = box.scrollHeight;
+                }, (err) => console.error(err));
+            } catch (_) {}
+        }
+
+        window.sendChatMessage = async () => {
+            const input = document.getElementById('chat-input');
+            const rawText = input.value.trim();
+            if (!rawText || !appState.activeOrderId) return;
+            const cleanText = sanitizeChatMessage(rawText);
+            input.value = '';
+            await ensureFirebaseAuth();
+            await getPublicDoc('orders', appState.activeOrderId).collection('messages').add({
+                senderId: appState.userData.id, senderName: appState.userData.name, text: cleanText, timestamp: Date.now()
+            });
+        };
+
+        function startCallDurationTimer() {
+            stopCallDurationTimer(); callSeconds = 0;
+            const timerEl = document.getElementById('call-timer');
+            timerEl.innerText = '00:00 • Terhubung';
+            callDurationTimer = setInterval(() => {
+                callSeconds++;
+                timerEl.innerText = `${String(Math.floor(callSeconds / 60)).padStart(2, '0')}:${String(callSeconds % 60).padStart(2, '0')} • Suara Real-Time`;
+            }, 1000);
+        }
+
+        function stopCallDurationTimer() {
+            if (callDurationTimer) { clearInterval(callDurationTimer); callDurationTimer = null; }
+            callSeconds = 0;
+        }
+
+        async function requestMicrophoneStream() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Browser perangkat ini tidak mendukung akses mikrofon WebRTC.');
+            return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+        }
+
+        function cleanupWebRTC() {
+            stopCallDurationTimer();
+            if (unsubCallerCandidates) { unsubCallerCandidates(); unsubCallerCandidates = null; }
+            if (unsubCalleeCandidates) { unsubCalleeCandidates(); unsubCalleeCandidates = null; }
+            if (localAudioStream) { localAudioStream.getTracks().forEach(t => t.stop()); localAudioStream = null; }
+            if (peerConnection) { try { peerConnection.close(); } catch (e) {} peerConnection = null; }
+            remoteAudioStream = null; currentCallRole = null; remoteOfferApplied = false; remoteAnswerApplied = false; pendingIceCandidates = []; isMicMuted = false;
+            const remoteAudioEl = document.getElementById('remote-voice-audio');
+            if (remoteAudioEl) remoteAudioEl.srcObject = null;
+            const inCallCtrl = document.getElementById('in-call-controls');
+            if (inCallCtrl) inCallCtrl.classList.add('hidden');
+        }
+
+        async function clearCallSubcollections(trxId) {
+            try {
+                const callDoc = getPublicDoc('calls', trxId);
+                const [callerSnap, calleeSnap] = await Promise.all([callDoc.collection('callerCandidates').get(), callDoc.collection('calleeCandidates').get()]);
+                const deletions = [];
+                callerSnap.forEach(d => deletions.push(d.ref.delete()));
+                calleeSnap.forEach(d => deletions.push(d.ref.delete()));
+                await Promise.all(deletions);
+            } catch (e) {}
+        }
+
+        async function flushPendingIceCandidates() {
+            if (!peerConnection || !peerConnection.remoteDescription) return;
+            while (pendingIceCandidates.length > 0) {
+                const cand = pendingIceCandidates.shift();
+                try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+            }
+        }
+
+        function createPeerConnection(trxId, role) {
+            const pc = new RTCPeerConnection(rtcConfig);
+            remoteAudioStream = new MediaStream();
+            const remoteAudioEl = document.getElementById('remote-voice-audio');
+            if (remoteAudioEl) { remoteAudioEl.srcObject = remoteAudioStream; remoteAudioEl.muted = false; remoteAudioEl.volume = 1.0; }
+            if (localAudioStream) localAudioStream.getTracks().forEach(track => pc.addTrack(track, localAudioStream));
+            pc.ontrack = (event) => {
+                if (event.streams && event.streams[0]) remoteAudioEl.srcObject = event.streams[0];
+                else { remoteAudioStream.addTrack(event.track); remoteAudioEl.srcObject = remoteAudioStream; }
+                remoteAudioEl.play().catch(() => {});
+            };
+            const candidateColName = role === 'caller' ? 'callerCandidates' : 'calleeCandidates';
+            pc.onicecandidate = (event) => { if (event.candidate) getPublicDoc('calls', trxId).collection(candidateColName).add(event.candidate.toJSON()).catch(() => {}); };
+            pc.onconnectionstatechange = () => {
+                if (!peerConnection) return;
+                if (pc.connectionState === 'connected') {
+                    document.getElementById('call-status-label').innerText = 'Terhubung (Suara Aktif)';
+                    document.getElementById('call-audio-hint').innerText = 'Mikrofon aktif • Bicara langsung sekarang';
+                    document.getElementById('in-call-controls').classList.remove('hidden');
+                    if (!callDurationTimer) startCallDurationTimer();
+                } else if (pc.connectionState === 'failed') {
+                    document.getElementById('call-audio-hint').innerText = 'Koneksi suara terputus, mencoba menyambung ulang...';
+                }
+            };
+            const remoteCandidateColName = role === 'caller' ? 'calleeCandidates' : 'callerCandidates';
+            const unsubRemoteCand = getPublicDoc('calls', trxId).collection(remoteCandidateColName).onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === 'added') {
+                        const candData = change.doc.data();
+                        if (pc.remoteDescription && pc.remoteDescription.type) {
+                            try { await pc.addIceCandidate(new RTCIceCandidate(candData)); } catch (e) {}
+                        } else pendingIceCandidates.push(candData);
+                    }
+                });
+            });
+            if (role === 'caller') unsubCalleeCandidates = unsubRemoteCand;
+            else unsubCallerCandidates = unsubRemoteCand;
+            return pc;
+        }
+
+        window.toggleCallMute = () => {
+            if (!localAudioStream) return;
+            isMicMuted = !isMicMuted;
+            localAudioStream.getAudioTracks().forEach(t => { t.enabled = !isMicMuted; });
+            const btn = document.getElementById('btn-toggle-mute'), icon = document.getElementById('icon-call-mute');
+            btn.className = isMicMuted ? 'w-14 h-14 rounded-full bg-rose-600 text-white flex flex-col items-center justify-center text-lg border border-rose-400 transition' : 'w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex flex-col items-center justify-center text-lg border border-slate-700 transition';
+            icon.className = isMicMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+        };
+
+        window.toggleCallSpeaker = () => {
+            const audioEl = document.getElementById('remote-voice-audio');
+            isSpeakerLoud = !isSpeakerLoud;
+            if (audioEl) { audioEl.muted = !isSpeakerLoud; audioEl.volume = isSpeakerLoud ? 1.0 : 0.3; }
+            const btn = document.getElementById('btn-toggle-speaker'), icon = document.getElementById('icon-call-speaker');
+            btn.className = isSpeakerLoud ? 'w-14 h-14 rounded-full bg-emerald-700/70 hover:bg-emerald-700 text-white flex flex-col items-center justify-center text-lg border border-emerald-500/40 transition' : 'w-14 h-14 rounded-full bg-slate-800 text-slate-400 flex flex-col items-center justify-center text-lg border border-slate-700 transition';
+            icon.className = isSpeakerLoud ? 'fas fa-volume-high' : 'fas fa-volume-xmark';
+        };
+
+        window.initiateVoiceCall = async () => {
+            if (!appState.activeOrderData) return;
+            const order = appState.activeOrderData;
+            const receiverId = appState.role === 'driver' ? order.paxId : order.driverId;
+            const partnerName = appState.role === 'driver' ? order.paxName : order.driverName;
+            cleanupWebRTC(); currentCallRole = 'caller';
+            document.getElementById('call-status-label').innerText = 'Meminta Izin Mikrofon...';
+            document.getElementById('call-partner-name').innerText = partnerName;
+            document.getElementById('call-timer').innerText = 'Izinkan akses mikrofon di browser...';
+            document.getElementById('call-audio-hint').innerText = 'Audio suara real-time dua arah';
+            document.getElementById('btn-answer-call').classList.add('hidden');
+            openModal('modal-voice-call');
+            try {
+                await ensureFirebaseAuth();
+                localAudioStream = await requestMicrophoneStream();
+                document.getElementById('call-status-label').innerText = 'Memanggil...';
+                document.getElementById('call-timer').innerText = 'Menunggu jawaban...';
+                await clearCallSubcollections(order.trxId);
+                peerConnection = createPeerConnection(order.trxId, 'caller');
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                await getPublicDoc('calls', order.trxId).set({
+                    trxId: order.trxId, callerId: appState.userData.id, callerName: appState.userData.name,
+                    receiverId, status: 'ringing', offer: { type: offer.type, sdp: offer.sdp }, answer: null, createdAt: Date.now()
+                });
+            } catch (err) {
+                cleanupWebRTC(); closeModal('modal-voice-call');
+                showDialog('Izin Mikrofon Diperlukan', 'Harap izinkan akses mikrofon pada browser Anda agar telepon suara real-time dapat terhubung.', 'error');
+            }
+        };
+
+        function listenIncomingCalls() {
+            if (unsubCalls) unsubCalls();
+            try {
+                unsubCalls = getPublicCol('calls').onSnapshot(async (snapshot) => {
+                    let activeCallFound = false;
+                    for (const docSnap of snapshot.docs) {
+                        const call = docSnap.data();
+                        if (!appState.activeOrderId || call.trxId !== appState.activeOrderId) continue;
+                        activeCallFound = true;
+                        if (call.status === 'ringing' && call.receiverId === appState.userData.id) {
+                            currentCallRole = 'callee';
+                            document.getElementById('call-status-label').innerText = 'Panggilan Suara Masuk';
+                            document.getElementById('call-partner-name').innerText = call.callerName;
+                            document.getElementById('call-timer').innerText = 'Berdering...';
+                            document.getElementById('call-audio-hint').innerText = 'Klik tombol hijau untuk angkat telepon';
+                            document.getElementById('btn-answer-call').classList.remove('hidden');
+                            openModal('modal-voice-call');
+                            startContinuousRing(
+                                `Panggilan Suara Masuk • ${call.callerName}`,
+                                'Ketuk untuk mengangkat telepon Gageh Surian'
+                            );
+                        } else if (call.status === 'connected') {
+                            stopContinuousRing();
+                            document.getElementById('btn-answer-call').classList.add('hidden');
+                            document.getElementById('in-call-controls').classList.remove('hidden');
+                            if (currentCallRole === 'caller' && call.answer && peerConnection && !remoteAnswerApplied) {
+                                remoteAnswerApplied = true;
+                                try {
+                                    await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
+                                    await flushPendingIceCandidates();
+                                    document.getElementById('call-status-label').innerText = 'Terhubung (Suara Aktif)';
+                                    document.getElementById('call-audio-hint').innerText = 'Mikrofon aktif • Bicara langsung sekarang';
+                                    if (!callDurationTimer) startCallDurationTimer();
+                                } catch (e) { console.error("Set Remote Answer Error:", e); }
+                            }
+                        } else if (call.status === 'ended') {
+                            stopContinuousRing(); cleanupWebRTC(); closeModal('modal-voice-call');
+                        }
+                    }
+                    if (!activeCallFound && currentCallRole) { stopContinuousRing(); cleanupWebRTC(); closeModal('modal-voice-call'); }
+                }, (err) => console.error(err));
+            } catch (_) {}
+        }
+
+        window.answerVoiceCall = async () => {
+            if (!appState.activeOrderId) return;
+            stopContinuousRing();
+            document.getElementById('btn-answer-call').classList.add('hidden');
+            document.getElementById('call-status-label').innerText = 'Menghubungkan Suara...';
+            document.getElementById('call-timer').innerText = 'Izinkan mikrofon di browser...';
+            try {
+                await ensureFirebaseAuth();
+                localAudioStream = await requestMicrophoneStream();
+                const callSnap = await getPublicDoc('calls', appState.activeOrderId).get();
+                if (!callSnap.exists) { cleanupWebRTC(); closeModal('modal-voice-call'); return; }
+                const callData = callSnap.data();
+                currentCallRole = 'callee';
+                peerConnection = createPeerConnection(appState.activeOrderId, 'callee');
+                if (callData.offer) {
+                    remoteOfferApplied = true;
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+                    await flushPendingIceCandidates();
+                }
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                await getPublicDoc('calls', appState.activeOrderId).update({ status: 'connected', answer: { type: answer.type, sdp: answer.sdp } });
+                document.getElementById('call-status-label').innerText = 'Terhubung (Suara Aktif)';
+                document.getElementById('call-audio-hint').innerText = 'Mikrofon aktif • Bicara langsung sekarang';
+                document.getElementById('in-call-controls').classList.remove('hidden');
+                startCallDurationTimer();
+            } catch (err) {
+                cleanupWebRTC(); closeModal('modal-voice-call');
+                showDialog('Gagal Terhubung', 'Izin mikrofon diperlukan untuk menjawab panggilan suara real-time.', 'error');
+            }
+        };
+
+        window.endVoiceCall = async () => {
+            stopContinuousRing(); cleanupWebRTC(); closeModal('modal-voice-call');
+            if (appState.activeOrderId) {
+                try { await getPublicDoc('calls', appState.activeOrderId).update({ status: 'ended' }).catch(() => {}); } catch (_) {}
+            }
+        };
+
+        window.submitCSReport = async () => {
+            const name = document.getElementById('cs-name').value.trim();
+            const wa = document.getElementById('cs-wa').value.trim();
+            const msg = document.getElementById('cs-message').value.trim();
+            if (!name || !wa || !msg) return showDialog('Form Belum Lengkap', 'Harap isi Nama, Nomor WhatsApp aktif, dan pesan pengaduan Anda.', 'error');
+            try {
+                await ensureFirebaseAuth();
+                const ticketId = generateRandomCode(16);
+                await getPublicDoc('cs_reports', ticketId).set({
+                    ticketId, name, wa, message: msg, role: appState.role || 'guest',
+                    server: getActiveAccountServer(), kecamatan: getCurrentLocationLabel(), createdAt: Date.now()
+                });
+                document.getElementById('cs-name').value = ''; document.getElementById('cs-wa').value = ''; document.getElementById('cs-message').value = '';
+                closeModal('modal-cs');
+                showDialog('Laporan Terkirim', `Terima kasih ${name}. Pengaduan Anda (ID: ${ticketId}) telah diteruskan ke Admin Kontrol.`);
+            } catch (err) {
+                showDialog('Gagal Mengirim Laporan', `Terjadi kendala server: ${err.message}`, 'error');
+            }
+        };
+
+        window.confirmLogout = () => {
+            if (appState.activeOrderId) return showDialog('Tidak Dapat Keluar', 'Anda masih memiliki transaksi aktif. Selesaikan terlebih dahulu sebelum keluar akun.', 'error');
+            showDialog('Konfirmasi Keluar', 'Apakah Anda yakin ingin keluar (Log Out) dari akun ini?', 'confirm', async () => {
+                const prevRole = appState.role, prevUserId = appState.userData && appState.userData.id ? appState.userData.id : null;
+                clearSessionState();
+                appState.role = null; appState.userData = null; appState.activeOrderId = null; appState.activeOrderData = null;
+                [unsubDriverDoc, unsubPassengerDoc, unsubDriverTopups, unsubOrders, unsubChats, unsubCalls].forEach(fn => { if (fn) fn(); });
+                unsubDriverDoc = unsubPassengerDoc = unsubDriverTopups = unsubOrders = unsubChats = unsubCalls = null;
+                ['modal-account-history', 'modal-active-detail', 'modal-topup', 'modal-order-form'].forEach(id => closeModal(id));
+                document.getElementById('active-order-drawer').classList.add('hidden');
+                document.getElementById('pax-searching-box').classList.add('hidden');
+                document.getElementById('view-passenger').classList.add('hidden');
+                document.getElementById('view-driver').classList.add('hidden');
+                document.getElementById('view-landing').classList.remove('hidden');
+                try {
+                    if (prevRole === 'driver' && prevUserId) {
+                        await Promise.race([getPublicDoc('drivers', prevUserId).update({ isOnline: false }), new Promise(r => setTimeout(r, 1500))]).catch(() => {});
+                    }
+                    if (prevRole && prevUserId) {
+                        getPublicDoc('account_locations', `${prevRole}_${prevUserId}`).set({ isOnline: false, lastSeen: Date.now() }, { merge: true }).catch(() => {});
+                    }
+                } catch (_) {}
+            });
+        };
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initApp);
+        else initApp();
+    </script>
+</body>
+</html>
